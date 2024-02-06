@@ -20,6 +20,9 @@ switch (config.source) {
   case config.sourceNames.DUMMY:
     getUrl = require('./dummyConnector');
     break;
+  case config.sourceNames.DCF:
+    getUrl = require('./dcfConnector');
+    break;
   default:
     throw `This shouldn't happen, invalid URL source: '${config.source}'`;
 }
