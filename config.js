@@ -34,6 +34,7 @@ const config = {
     PUBLIC_S3,
     SIGNED_S3,
     DUMMY,
+    DCF,
   },
   source: (process.env.URL_SRC || DUMMY).toUpperCase(),
   fake: process.env.FAKE ? (process.env.FAKE.toLowerCase() === 'true') : false, // This is used to fake CloudFront call locally

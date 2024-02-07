@@ -24,8 +24,10 @@ router.get('/:fileId', async function(req, res, next) {
   const fileId = req.params.fileId;
   try {
     const cookie = req.headers.cookie;
-    let response = await getURL(fileId, cookie);
+    let response = await getURL(fileId, req, res);
     //await storeDownloadEvent(req.session?.userInfo, fileId);
+    console.log("response")
+    console.log(response)
     res.send(response);
   } catch (e) {
     console.error(e);
