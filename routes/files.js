@@ -22,13 +22,12 @@ router.get('/version', function(req, res, next) {
 /* GET file's location based on fileId. */
 router.get('/:fileId', async function(req, res, next) {
   const fileId = req.params.fileId;
+  console.log(fileId)
   try {
     const cookie = req.headers.cookie;
     let response = await getURL(fileId, req, res);
     //await storeDownloadEvent(req.session?.userInfo, fileId);
-    console.log("response")
-    console.log(response)
-    res.send(response);
+     res.status(response.status).send(response.message);
   } catch (e) {
     console.error(e);
     let status = 400;
