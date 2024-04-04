@@ -91,11 +91,12 @@ const getDCFTokenFromDatabase = async (req, pool) => {
         const connection = await getDatabaseConnection(pool);
         try {
             const sessionID = getSessionIDFromCookie(req); // Example sessionID, replace with actual logic
+            console.log("sessionID: ", sessionID)
             if (!sessionID || sessionID==null) throw new Error("No session ID found");
             const rows = await queryDatabase(connection, "SELECT * FROM ctdc.sessions WHERE session_id = ?", [sessionID]);
             if (!rows || !rows[0] || !rows[0].data) throw new Error("Session expires or not found");
 
-            const output = JSON.parse(rows[0].data).userInfo.tokens;
+            const output = JSON.parse(rows[0].data).tokens;
             return output;
         } finally {
             connection.release();
@@ -148,6 +149,7 @@ const fetchDCFFile = async (file_id, accessToken) => {
 module.exports = async (file_id, req) => {
     const connectionPool = connection;
     const token = await getDCFTokenFromDatabase(req, connectionPool);
+    console.log("Access Token: ", accessToken)
     if (token == "NA") {
          return {
             status: 500,
