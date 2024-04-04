@@ -18,10 +18,18 @@ router.get('/version', function(req, res, next) {
   });
 });
 
+/* Endpoint to accept GUID with the following format: /dg.4DFC/{rest_of_id} */
+router.get('/:prefix/:fileId', async function(req, res, next) {
+  console.log("I am here: ", req.params.prefix+"/"+req.params.fileId);
+  await getFile(req.params.prefix+"/"+req.params.fileId, req, res, next);
+});
 
 /* GET file's location based on fileId. */
 router.get('/:fileId', async function(req, res, next) {
-  const fileId = req.params.fileId;
+  await getFile(req.params.fileId, req, res, next);
+});
+
+async function getFile(fileId, req, res, next) {
   console.log(fileId)
   try {
     const cookie = req.headers.cookie;
@@ -40,6 +48,6 @@ router.get('/:fileId', async function(req, res, next) {
     }
     res.status(status).send(message);
   }
-});
+};
 
 module.exports = router;
