@@ -123,19 +123,26 @@ const fetchDCFFile = async (file_id, accessToken) => {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        if (!response.ok) {
+            return {
+                status: response.status,
+                message: `File not found: ${response.status} (${response.statusText})`
+            };
+            // throw new Error(`HTTP error! status: ${response.status}`);
+        }
         console.log("DCF file fetched successfully");
         const signed_url= await response.json();
+        console.log("signed_url: ", signed_url);
         return {
             status: 200,
             message: signed_url
-        }
+        };
     } catch (error) {
         console.error("Failed to fetch DCF file:", error.message);
         return {
             status: 500,
             message: "Failed to fetch DCF file:"+ error.message
-        }
+        };
     }
 };
 
@@ -149,7 +156,7 @@ const fetchDCFFile = async (file_id, accessToken) => {
 module.exports = async (file_id, req) => {
     const connectionPool = connection;
     const token = await getDCFTokenFromDatabase(req, connectionPool);
-    console.log("Access Token: ", accessToken)
+    console.log("Access Token: ", token);
     if (token == "NA") {
          return {
             status: 500,
