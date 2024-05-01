@@ -1,4 +1,4 @@
-FROM node:16.20.2-alpine3.18
+FROM node:16.20.2-alpine3.18 AS fnl_base_image
 ENV PORT 8081
 ENV NODE_ENV production
 WORKDIR /usr/src/app
