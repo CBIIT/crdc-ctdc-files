@@ -36,7 +36,7 @@ const config = {
     DUMMY,
     DCF,
   },
-  source: (process.env.URL_SRC || DUMMY).toUpperCase(),
+  source: 'DCF',
   fake: process.env.FAKE ? (process.env.FAKE.toLowerCase() === 'true') : false, // This is used to fake CloudFront call locally
   backendUrl: removeTrailingSlashes(process.env.BACKEND_URL),
   authorizationEnabled: process.env.AUTHORIZATION_ENABLED ? process.env.AUTHORIZATION_ENABLED.toLowerCase() === 'true' : false,
@@ -79,9 +79,9 @@ function readPrivateKey(keyPath) {
 
 switch (config.source) {
   case DCF:
-    config.DCF_File_URL = removeTrailingSlashes(process.env.DCF_File_URL);
+    config.DCF_File_URL = removeTrailingSlashes(process.env.DCF_FILE_URL);
     if (!config.DCF_File_URL) {
-      throw "INDEXD_URL is not set!";
+      throw "DCF_File_URL is not set!";
     }
     break;
   case INDEXD:

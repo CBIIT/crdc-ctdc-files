@@ -2,6 +2,9 @@ const nodeFetch = require('node-fetch');
 const mysql = require('mysql');
 const config = require('../config.js');
 
+
+// Setting up a MySQL connection pool from the provided configurations.
+// This pool will manage multiple database connections, allowing for efficient reuse and management of connections.
 const connection = mysql.createPool({
     host: config.mysql_host,
     user: config.mysql_user,
@@ -11,94 +14,166 @@ const connection = mysql.createPool({
 });
 
 
-function getSessionIDFromCookie(req, res){
-    if (!req || !req.cookies || !req.cookies["connect.sid"]){
+
+
+const parseCookies = (cookieHeader) => {
+    const list = {};
+    cookieHeader && cookieHeader.split(';').forEach((cookie) => {
+        const parts = cookie.split('=');
+        list[parts.shift().trim()] = decodeURI(parts.join('='));
+    });
+    return list;
+};
+
+
+
+/**
+ * Extracts the session ID from the cookies in the request.
+ * Logs and returns the session ID if present, or null if not found.
+ * @param {Object} req - The incoming HTTP request containing cookies.
+ * @returns {String|null} The extracted session ID or null if not available.
+ */
+const getSessionIDFromCookie = (req) => {
+    console.log("getSessionIDFromCookie");
+    const cookies = parseCookies(req.headers.cookie);
+     
+    console.log(cookies["connect.sid"]);
+    if (!cookies["connect.sid"]) {
         return null;
     }
-    else{
-        return req.cookies["connect.sid"].match(':.*[.]')[0].slice(1,-1);
-    }
-}
+    console.log(cookies["connect.sid"].match('.*[.]')[0].slice(4, -1));
+    return cookies["connect.sid"].match('.*[.]')[0].slice(4, -1);
+};
 
 
-async function getDCFTokenFromDatabase(req,res) {
-        let currentConnection = null;
-        try {
-        const currentConnection = await new Promise((resolve, reject) => {
-            connection.getConnection((err, connection) => {
-                if (err) reject(err);
-                else resolve(connection);
-            });
-        });
+/**
+ * Asynchronously gets a database connection from the connection pool.
+ * Logs the attempt and result of getting a connection.
+ * @param {Object} pool - The database connection pool.
+ * @returns {Promise<Object>} A promise resolving with a database connection.
+ */
+const getDatabaseConnection = (pool) => new Promise((resolve, reject) => {
+    pool.getConnection((err, connection) => {
+        if (err) reject(err);
+        else resolve(connection);
+    });
+});
 
-        // let sessionID = getSessionIDFromCookie(req, res);
-        let sessionID = 1; // Example sessionID
-        if (sessionID !== null) {
-            const rows = await new Promise((resolve, reject) => {
-                currentConnection.query("select * from sessions", (err, rows) => {
-                    if (err) reject(err);
-                    else resolve(rows);
-                });
-            });
 
-            if (!rows || !rows[0] || !rows[0].data) {
-                console.log("Session expires");
-                return -1; // or handle accordingly
-            } else {
-                const output = JSON.parse(rows[0].data).userInfo.tokens;
-                return output;
-            }
-        } else {
-            console.log("An internal server error occurred, please contact the administrators");
-            return -1;
-        }
-        if (currentConnection) currentConnection.release();
-    } catch (error) {
-        console.log("Error: ", error.message);
-        return -1;
-    } finally {
-         if (currentConnection) {
-            currentConnection.release(); // Ensure connection is released
-        }
-        
-    }
-}
 
-async function dcfFile(file_id, accessToken) {
-    // Construct the URL using template literals for better readability
-    const url = `${config.DCF_File_URL}/${file_id}`;
-    
+
+/**
+ * Performs a database query using an established connection.
+ * Logs the query execution attempt and outcome.
+ * @param {Object} connection - The database connection to use for the query.
+ * @param {String} query - The SQL query string to execute.
+ * @param {Array} values - Parameters to pass to the query for prepared statements.
+ * @returns {Promise<Array|Object>} A promise resolving with the query results.
+ */
+const queryDatabase = (connection, query, values = []) => new Promise((resolve, reject) => {
+    connection.query(query, values, (err, results) => {
+        if (err) reject(err);
+        else resolve(results);
+    });
+});
+
+
+
+/**
+ * Retrieves the DCF token from the database using the session ID obtained from the request cookie.
+ * Logs the process of retrieving the token and any errors or issues encountered.
+ * @param {Object} req - The incoming HTTP request to extract the session ID from.
+ * @param {Object} pool - The database connection pool to use for queries.
+ * @returns {String} A promise resolving with the DCF token or -1 in case of failure.
+ */
+const getDCFTokenFromDatabase = async (req, pool) => {
+    console.log("getDCFTokenFromDatabase");
     try {
-        // Perform the HTTP GET request using the Fetch API
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
-            }
-        });
+        const connection = await getDatabaseConnection(pool);
+        try {
+            const sessionID = getSessionIDFromCookie(req); // Example sessionID, replace with actual logic
+            console.log("sessionID: ", sessionID)
+            if (!sessionID || sessionID==null) throw new Error("No session ID found");
+            const rows = await queryDatabase(connection, "SELECT * FROM ctdc.sessions WHERE session_id = ?", [sessionID]);
+            if (!rows || !rows[0] || !rows[0].data) throw new Error("Session expires or not found");
 
-        // Check if the response is successful (status in the range 200-299)
-        if (!response.ok) {
-            // Throw an error with response status if the fetch was not successful
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const output = JSON.parse(rows[0].data).tokens;
+            return output;
+        } finally {
+            connection.release();
         }
-
-        // Parse the JSON response body and return it
-        return await response.json();
     } catch (error) {
-        // Handle errors that occurred during the fetch operation or JSON parsing
-        console.error("Error fetching the DCF file:", error.message);
-        throw error; // Rethrow the error if you want the caller to handle it
+        console.error("Error in getDCFTokenFromDatabase:", error.message);
+        return "NA";
     }
-}
+};
 
 
+/**
+ * Fetches a DCF file using the provided file ID and access token.
+ * Logs the request attempt, any errors encountered, and the success state.
+ * @param {String} file_id - The ID of the file to fetch.
+ * @param {String} accessToken - The access token required for authentication.
+ * @returns { Object } 
+ */
+const fetchDCFFile = async (file_id, accessToken) => {
+    const url = `${config.DCF_File_URL}/${file_id}`;
+    console.log(`Fetching DCF file from URL: ${url}`);
+    console.log(`token :  ${accessToken}`)
+    try {
+        const response = await nodeFetch(url, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        if (!response.ok) {
+            console.error('auth fails')
+            console.error(response.status);
+            console.error(response.statusText);
+            return {
+                status: response.status,
+                message: `File not found: ${response.status} (${response.statusText})`
+            };
+            // throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        console.log("DCF file fetched successfully");
 
-module.exports = async function (file_id,req,res) {
-    const token = await getDCFTokenFromDatabase(req,res);
-    if(token == -1){
-        return null;
-    }else{
-      return dcfFile(file_id, token);
+        const signed_url= await response.json();
+
+        console.log("signed_url: ", signed_url);
+        return {
+            status: 200,
+            message: signed_url
+        };
+    } catch (error) {
+        console.error("Failed to fetch DCF file:", error.message);
+        return {
+            status: 500,
+            message: "Failed to fetch DCF file:"+ error.message
+        };
     }
-}
+};
+
+
+/**
+ * The main function that orchestrates the retrieval of a DCF token and fetching of a file.
+ * Logs the process and handles any failures encountered along the way.
+ * @param {String} file_id - The ID of the file to be fetched.
+ * @param {Object} req - The request object, used to retrieve the session ID and DCF token.
+ */
+module.exports = async (file_id, req) => {
+    console.log("This is DCF Connector ");
+    const connectionPool = connection;
+    console.log("MYSQL Connection Completed ");
+
+    const token = await getDCFTokenFromDatabase(req, connectionPool);
+
+    console.log("Access Token: ", token);
+    if (token == "NA") {
+         return {
+            status: 500,
+            message: "Failed to retrieve valid token, cannot proceed with file fetch"
+        }
+    } else {
+        return fetchDCFFile(file_id, token);
+    }
+};
