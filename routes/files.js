@@ -18,6 +18,11 @@ router.get('/version', function(req, res, next) {
   });
 });
 
+router.get('/config', function(req, res, next) {
+  console.log(config);
+  res.send(`done`);
+});
+
 /* Endpoint to accept GUID with the following format: /dg.4DFC/{rest_of_id} */
 router.get('/:prefix/:fileId', async function(req, res, next) {
   await getFile(req.params.prefix+"/"+req.params.fileId, req, res, next);
@@ -32,7 +37,7 @@ async function getFile(fileId, req, res, next) {
   console.log(fileId)
   try {
     const cookie = req.headers.cookie;
-    console.log("Get Cookie ", cookie);
+    console.log("Get Cookie ");
     let response = await getURL(fileId, req, res);
     //await storeDownloadEvent(req.session?.userInfo, fileId);
      res.status(response.status).send(response.message);
