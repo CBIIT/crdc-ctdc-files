@@ -81,7 +81,7 @@ switch (config.source) {
   case DCF:
     config.DCF_File_URL = removeTrailingSlashes(process.env.DCF_File_URL);
     if (!config.DCF_File_URL) {
-      throw "INDEXD_URL is not set!";
+      throw "DCF_File_URL is not set!";
     }
     break;
   case INDEXD:
