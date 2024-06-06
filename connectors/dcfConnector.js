@@ -117,7 +117,7 @@ const getDCFTokenFromDatabase = async (req, pool) => {
  * @returns { Object } 
  */
 const fetchDCFFile = async (file_id, accessToken) => {
-    const url = `${config.DCF_File_URL}${file_id}`;
+    const url = `${config.DCF_File_URL}/${file_id}`;
     console.log(`Fetching DCF file from URL: ${url}`);
     console.log(`token :  ${accessToken}`)
     try {
