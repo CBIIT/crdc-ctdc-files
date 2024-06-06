@@ -3,10 +3,10 @@ const router = express.Router();
 const config = require('../config');
 const getURL = require('../connectors');
 //const {storeDownloadEvent} = require("../neo4j/neo4j-operations");
-console.log(config);
 
 /* GET ping-ping for health checking. */
 router.get('/ping', function(req, res, next) {
+  console.log(config);
   res.send(`pong`);
 });
 
@@ -32,6 +32,7 @@ async function getFile(fileId, req, res, next) {
   console.log(fileId)
   try {
     const cookie = req.headers.cookie;
+    console.log("Get Cookie ", cookie);
     let response = await getURL(fileId, req, res);
     //await storeDownloadEvent(req.session?.userInfo, fileId);
      res.status(response.status).send(response.message);

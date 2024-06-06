@@ -36,7 +36,8 @@ const parseCookies = (cookieHeader) => {
 const getSessionIDFromCookie = (req) => {
     console.log("getSessionIDFromCookie");
     const cookies = parseCookies(req.headers.cookie);
-     console.log(cookies["connect.sid"]);
+     
+    console.log(cookies["connect.sid"]);
     if (!cookies["connect.sid"]) {
         return null;
     }
@@ -118,12 +119,16 @@ const getDCFTokenFromDatabase = async (req, pool) => {
 const fetchDCFFile = async (file_id, accessToken) => {
     const url = `${config.DCF_File_URL}${file_id}`;
     console.log(`Fetching DCF file from URL: ${url}`);
+    console.log(`token :  ${accessToken}`)
     try {
         const response = await nodeFetch(url, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
         if (!response.ok) {
+            console.error('auth fails')
+            console.error(response.status);
+            console.error(response.statusText);
             return {
                 status: response.status,
                 message: `File not found: ${response.status} (${response.statusText})`
@@ -131,7 +136,9 @@ const fetchDCFFile = async (file_id, accessToken) => {
             // throw new Error(`HTTP error! status: ${response.status}`);
         }
         console.log("DCF file fetched successfully");
+
         const signed_url= await response.json();
+
         console.log("signed_url: ", signed_url);
         return {
             status: 200,
@@ -154,8 +161,12 @@ const fetchDCFFile = async (file_id, accessToken) => {
  * @param {Object} req - The request object, used to retrieve the session ID and DCF token.
  */
 module.exports = async (file_id, req) => {
+    console.log("This is DCF Connector ");
     const connectionPool = connection;
+    console.log("MYSQL Connection Completed ");
+
     const token = await getDCFTokenFromDatabase(req, connectionPool);
+
     console.log("Access Token: ", token);
     if (token == "NA") {
          return {
