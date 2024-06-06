@@ -79,7 +79,7 @@ function readPrivateKey(keyPath) {
 
 switch (config.source) {
   case DCF:
-    config.DCF_File_URL = removeTrailingSlashes(process.env.DCF_File_URL);
+    config.DCF_File_URL = removeTrailingSlashes(process.env.DCF_FILE_URL);
     if (!config.DCF_File_URL) {
       throw "DCF_File_URL is not set!";
     }
