@@ -16,6 +16,7 @@ const GMB = 'GMB';
 const C3DC = 'C3DC';
 const CTDC = 'CTDC';
 const CDS = 'CDS';
+const DCF = 'DCF';
 
 const config = {
   projectNames: {
@@ -33,8 +34,9 @@ const config = {
     PUBLIC_S3,
     SIGNED_S3,
     DUMMY,
+    DCF,
   },
-  source: (process.env.URL_SRC || DUMMY).toUpperCase(),
+  source: 'DCF',
   fake: process.env.FAKE ? (process.env.FAKE.toLowerCase() === 'true') : false, // This is used to fake CloudFront call locally
   backendUrl: removeTrailingSlashes(process.env.BACKEND_URL),
   authorizationEnabled: process.env.AUTHORIZATION_ENABLED ? process.env.AUTHORIZATION_ENABLED.toLowerCase() === 'true' : false,
@@ -76,6 +78,12 @@ function readPrivateKey(keyPath) {
 }
 
 switch (config.source) {
+  case DCF:
+    config.DCF_File_URL = removeTrailingSlashes(process.env.DCF_FILE_URL);
+    if (!config.DCF_File_URL) {
+      throw "DCF_File_URL is not set!";
+    }
+    break;
   case INDEXD:
     config.indexDUrl = removeTrailingSlashes(process.env.INDEXD_URL);
     if (!config.indexDUrl) {

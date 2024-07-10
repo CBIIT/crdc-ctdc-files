@@ -1,5 +1,6 @@
 const newrelic = require('newrelic');
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const logger = require('morgan');
 const {createSession} = require("./services/session");
@@ -19,6 +20,7 @@ const accessLogStream = fs.createWriteStream(path.join(__dirname, LOG_FOLDER, 'a
 const filesRouter = require('./routes/files');
 
 const app = express();
+app.use(cookieParser());
 if (config.mysqlSessionEnabled) app.use(createSession());
 app.use(cors());
 
@@ -27,7 +29,9 @@ app.use(logger('combined', { stream: accessLogStream }))
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+
 app.use(auth(["/api/files/ping", "/api/files/version"]));
+
 app.use('/api/files', filesRouter);
 
 // catch 404 and forward to error handler
