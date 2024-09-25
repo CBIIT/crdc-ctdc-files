@@ -9,7 +9,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.67.0",
     "@aws-sdk/s3-request-presigner": "^3.67.0",
-    "aws-sdk": "^2.906.0",
+    "aws-sdk": "^2.1688.0",
     "bent": "^7.3.12",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
