@@ -41,7 +41,36 @@ router.get('/:fileId', async function(req, res, next) {
 });
 
 router.post('/get-manifest-file-signed-url', async function(req, res, next) {
-  const obj = ["Banana", "Orange", "Apple", "Mango"];
+  const obj = [
+    {
+      "id": 1,
+      "name": "Alice",
+      "age": 30,
+      "email": "alice@example.com",
+      "isActive": true
+    },
+    {
+      "id": 2,
+      "name": "Bob",
+      "age": 24,
+      "email": "bob@example.com",
+      "isActive": false
+    },
+    {
+      "id": 3,
+      "name": "Charlie",
+      "age": 28,
+      "email": "charlie@example.com",
+      "isActive": true
+    },
+    {
+      "id": 4,
+      "name": "David",
+      "age": 35,
+      "email": "david@example.com",
+      "isActive": false
+    }
+  ];
   const myJSON = JSON.stringify(obj);
   await uploadManifestToS3(req.params.manifest,myJSON);
 });
@@ -70,17 +99,16 @@ async function getFile(fileId, req, res, next) {
 };
 
 async function uploadManifestToS3(parameters,obj) {
-  // try {
-  //   const s3Client = new S3Client({
-  //     region: config.AWS_REGION,
-  //     credentials: {
-  //       accessKeyId: config.S3_ACCESS_KEY_ID,
-  //       secretAccessKey: config.S3_SECRET_ACCESS_KEY,
-  //     },
-  //   });
-
+  try {
+    const s3Client = new S3Client({
+      region: config.AWS_REGION,
+      credentials: {
+        accessKeyId: config.S3_ACCESS_KEY_ID,
+        secretAccessKey: config.S3_SECRET_ACCESS_KEY,
+      },
+    });
+    
     const parsedManifest = JSON.parse(obj);
-    console.log(parsedManifest); 
     if (!parsedManifest || !Array.isArray(parsedManifest)) {
       throw new Error(errorName.MALFORMED_FILE_MANIFEST);
     }
@@ -99,22 +127,22 @@ async function uploadManifestToS3(parameters,obj) {
       Body: await fs.readFile(tempCsvFilePath, { encoding: "utf-8" }),
     };
     const uploadCommand = new PutObjectCommand(uploadParams);
-    // console.log(uploadCommand); 
-    // await s3Client.send(uploadCommand);
+    console.log(uploadCommand); 
+    await s3Client.send(uploadCommand);
 
-    // return getSignedUrl({
-    //   keyPairId: config.CLOUDFRONT_KEY_PAIR_ID,
-    //   privateKey: config.CLOUDFRONT_PRIVATE_KEY,
-    //   url: `${config.CLOUDFRONT_DOMAIN}/${tempCsvFile}`,
-    //   dateLessThan: new Date(
-    //     Date.now() + 1000 * config.SIGNED_URL_EXPIRY_SECONDS
-    //   ),
-    // });
+    return getSignedUrl({
+      keyPairId: config.CLOUDFRONT_KEY_PAIR_ID,
+      privateKey: config.CLOUDFRONT_PRIVATE_KEY,
+      url: `${config.CLOUDFRONT_DOMAIN}/${tempCsvFile}`,
+      dateLessThan: new Date(
+        Date.now() + 1000 * config.SIGNED_URL_EXPIRY_SECONDS
+      ),
+    });
     return console.log(uploadCommand); 
-  // } catch (error) {
-  //   console.error(error);
-  //   return error;
-  // }
+  } catch (error) {
+    console.error(error);
+    return error;
+  }
 }
 
 
