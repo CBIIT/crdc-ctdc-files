@@ -89,8 +89,10 @@ router.post('/get-manifest-file-signed-url', async function(req, res, next) {
   // const myJSON = JSON.stringify(obj);
   
   // let response = await uploadManifestToS3(req.params.manifest,obj);
-  let response = await uploadManifestToS3(req.params.manifest);
-  res.send(response);
+  let response = await uploadManifestToS3(req.body);
+  res.send({
+    manifestSignedUrl: response
+    });
 });
 
 
