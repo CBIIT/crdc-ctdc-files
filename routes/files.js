@@ -2,6 +2,13 @@ const express = require('express');
 const router = express.Router();
 const config = require('../config');
 const getURL = require('../connectors');
+const { randomUUID } = require("crypto");
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require("@aws-sdk/cloudfront-signer");
+const fs = require("fs").promises;
+const os = require("os");
+const path = require("path");
+
 //const {storeDownloadEvent} = require("../neo4j/neo4j-operations");
 
 /* GET ping-ping for health checking. */
@@ -33,6 +40,14 @@ router.get('/:fileId', async function(req, res, next) {
   await getFile(req.params.fileId, req, res, next);
 });
 
+router.post('/get-manifest-file-signed-url', async function(req, res, next) {
+  let response = await uploadManifestToS3(req.body);
+  res.send({
+    manifestSignedUrl: response
+    });
+});
+
+
 async function getFile(fileId, req, res, next) {
   console.log(fileId)
   try {
@@ -54,5 +69,47 @@ async function getFile(fileId, req, res, next) {
     res.status(status).send(message);
   }
 };
+
+async function uploadManifestToS3(parameters) {
+  try {
+    const s3Client = new S3Client({
+      region: config.AWS_REGION,
+      credentials: {
+        accessKeyId: config.S3_ACCESS_KEY_ID,
+        secretAccessKey: config.S3_SECRET_ACCESS_KEY,
+      },
+    });
+    //convert body into a CSV file
+    const manifestCsv = parameters.manifest
+    const tempCsvFile = `${randomUUID()}.csv`;
+    const tempCsvFilePath = path.join(os.tmpdir(), tempCsvFile);
+    await fs.writeFile(tempCsvFilePath, manifestCsv, {
+      encoding: "utf-8",
+    });
+
+    const uploadParams = {
+      Bucket: config.FILE_MANIFEST_BUCKET_NAME,
+      Key: tempCsvFile,
+      Body: await fs.readFile(tempCsvFilePath, { encoding: "utf-8" }),
+    };
+    const uploadCommand = new PutObjectCommand(uploadParams);
+    //upload CSV
+    await s3Client.send(uploadCommand);
+    //Return signed URL for CSV
+    return getSignedUrl({
+      keyPairId: config.CLOUDFRONT_KEY_PAIR_ID,
+      privateKey: config.CLOUDFRONT_PRIVATE_KEY,
+      url: `${config.CLOUDFRONT_DOMAIN}/${tempCsvFile}`,
+      dateLessThan: new Date(
+        Date.now() + 1000 * config.SIGNED_URL_EXPIRY_SECONDS
+      ),
+    });
+  } catch (error) {
+    console.error(error);
+    return error;
+  }
+}
+
+
 
 module.exports = router;

@@ -1,0 +1,3 @@
+exports.errorName = {
+  MALFORMED_FILE_MANIFEST: "MALFORMED_FILE_MANIFEST",
+};
