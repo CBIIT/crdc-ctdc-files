@@ -8,6 +8,7 @@ const { getSignedUrl } = require("@aws-sdk/cloudfront-signer");
 const fs = require("fs").promises;
 const os = require("os");
 const path = require("path");
+const { errorName } = require("../constants/error-constants");
 
 //const {storeDownloadEvent} = require("../neo4j/neo4j-operations");
 
@@ -41,10 +42,87 @@ router.get('/:fileId', async function(req, res, next) {
 });
 
 router.post('/get-manifest-file-signed-url', async function(req, res, next) {
-  let response = await uploadManifestToS3(req.body);
-  res.send({
-    manifestSignedUrl: response
+  try {
+    // Check if the necessary data is in the request body
+    if (!req.body || !req.body.manifestData) {
+      return res.status(400).send({
+        error: 'Bad Request',
+        message: 'Missing manifest data in the request body.'
+      });
+    }
+    // obj = {
+    //   "errors": [
+    //     {
+    //       "status": 400,
+    //       "error": "Bad Request",
+    //       "message": "Missing manifest data in the request body.",
+    //       "details": {
+    //         "field": "manifestData",
+    //         "required": true
+    //       }
+    //     },
+    //     {
+    //       "status": 401,
+    //       "error": "Unauthorized",
+    //       "message": "Authentication failed, please check your credentials.",
+    //       "details": {
+    //         "reason": "Invalid API key or token"
+    //       }
+    //     },
+    //     {
+    //       "status": 403,
+    //       "error": "Forbidden",
+    //       "message": "You do not have permission to perform this action.",
+    //       "details": {
+    //         "reason": "User does not have sufficient access rights"
+    //       }
+    //     },
+    //     {
+    //       "status": 404,
+    //       "error": "Not Found",
+    //       "message": "The requested resource could not be found.",
+    //       "details": {
+    //         "resource": "manifest",
+    //         "identifier": "manifestId123"
+    //       }
+    //     },
+    //     {
+    //       "status": 500,
+    //       "error": "Internal Server Error",
+    //       "message": "An unknown error occurred while processing the request.",
+    //       "details": {
+    //         "timestamp": "2024-12-09T12:34:56Z",
+    //         "traceId": "abc123xyz"
+    //       }
+    //     }
+    //   ]
+    // }
+    
+
+    let response = await uploadManifestToS3(req.body);
+    
+    res.send({
+      manifestSignedUrl: response
     });
+  } catch (error) {
+    console.error(error);
+    if (error instanceof SomeSpecificError) {
+      return res.status(400).send({
+        error: 'Bad Request',
+        message: 'Invalid manifest data format.'
+      });
+    } else if (error instanceof AuthenticationError) {
+      return res.status(401).send({
+        error: 'Unauthorized',
+        message: 'Authentication failed, please check your credentials.'
+      });
+    } else {
+      return res.status(500).send({
+        error: 'Internal Server Error',
+        message: error.message || 'An unknown error occurred while processing the request.'
+      });
+    }
+  }
 });
 
 
@@ -79,13 +157,53 @@ async function uploadManifestToS3(parameters) {
         secretAccessKey: config.S3_SECRET_ACCESS_KEY,
       },
     });
+
+    obj = JSON.stringify(parameters.manifest)
+    try {
+      JSON.parse(obj);
+      } 
+    catch (e){
+        try{
+          obj = JSON.stringify(parameters.manifest)
+          JSON.parse(obj)
+          }
+        catch (e){
+            return getSignedUrl({
+              url: `Failed to Parse , Malformed data `,
+              dateLessThan: new Date(
+                Date.now() + 1000 * config.SIGNED_URL_EXPIRY_SECONDS
+              ),
+          });
+        }
+    }
+    
     //convert body into a CSV file
     const manifestCsv = parameters.manifest
     const tempCsvFile = `${randomUUID()}.csv`;
     const tempCsvFilePath = path.join(os.tmpdir(), tempCsvFile);
+    //TODO add try catch here for argerror
+    try {
     await fs.writeFile(tempCsvFilePath, manifestCsv, {
       encoding: "utf-8",
     });
+    } catch (e){
+      
+      try{
+        const manifestCsvTry = JSON.stringify(parameters.manifest)
+        await fs.writeFile(tempCsvFilePath, manifestCsvTry, {
+          encoding: "utf-8",
+        });}
+      catch (e){
+          return getSignedUrl({
+            url: `Failed to Write to file , Malformed data `,
+            dateLessThan: new Date(
+              Date.now() + 1000 * config.SIGNED_URL_EXPIRY_SECONDS
+            ),
+        });
+      }
+    
+    }
+    
 
     const uploadParams = {
       Bucket: config.FILE_MANIFEST_BUCKET_NAME,
