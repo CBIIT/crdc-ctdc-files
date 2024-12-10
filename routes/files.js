@@ -8,7 +8,6 @@ const { getSignedUrl } = require("@aws-sdk/cloudfront-signer");
 const fs = require("fs").promises;
 const os = require("os");
 const path = require("path");
-const { errorName } = require("../constants/error-constants");
 
 //const {storeDownloadEvent} = require("../neo4j/neo4j-operations");
 
@@ -161,32 +160,11 @@ async function uploadManifestToS3(parameters) {
         secretAccessKey: config.S3_SECRET_ACCESS_KEY,
       },
     });
-
-    obj = parameters.manifest
-    try {
-      JSON.parse(obj);
-      } 
-    catch (e){
-        try{
-          obj = JSON.stringify(parameters.manifest)
-          JSON.parse(obj)
-          }
-        catch (e){
-          console.log('Failed to Parse , Malformed data ')
-            return getSignedUrl({
-              url: `Failed to Parse , Malformed data `,
-              dateLessThan: new Date(
-                Date.now() + 1000 * config.SIGNED_URL_EXPIRY_SECONDS
-              ),
-          });
-        }
-    }
     
     //convert body into a CSV file
     const manifestCsv = parameters.manifest
     const tempCsvFile = `${randomUUID()}.csv`;
     const tempCsvFilePath = path.join(os.tmpdir(), tempCsvFile);
-    //TODO add try catch here for argerror
     try {
     await fs.writeFile(tempCsvFilePath, manifestCsv, {
       encoding: "utf-8",
@@ -195,6 +173,7 @@ async function uploadManifestToS3(parameters) {
       
       try{
         const manifestCsvTry = JSON.stringify(parameters.manifest)
+        console.log('Attempting to Stringify data')
         await fs.writeFile(tempCsvFilePath, manifestCsvTry, {
           encoding: "utf-8",
         });}
