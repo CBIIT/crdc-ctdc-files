@@ -45,6 +45,7 @@ router.post('/get-manifest-file-signed-url', async function(req, res, next) {
   try {
     // Check if the necessary data is in the request body
     if (!req.body || !req.body.manifestData) {
+      console.log('Missing manifest data in the request body.')
       return res.status(400).send({
         error: 'Bad Request',
         message: 'Missing manifest data in the request body.'
@@ -107,16 +108,19 @@ router.post('/get-manifest-file-signed-url', async function(req, res, next) {
   } catch (error) {
     console.error(error);
     if (error instanceof SomeSpecificError) {
+      console.log('Invalid manifest data format.')
       return res.status(400).send({
         error: 'Bad Request',
         message: 'Invalid manifest data format.'
       });
     } else if (error instanceof AuthenticationError) {
+      console.log('Authentication failed, please check your credentials.')
       return res.status(401).send({
         error: 'Unauthorized',
         message: 'Authentication failed, please check your credentials.'
       });
     } else {
+      console.log('An unknown error occurred while processing the request.')
       return res.status(500).send({
         error: 'Internal Server Error',
         message: error.message || 'An unknown error occurred while processing the request.'
@@ -158,7 +162,7 @@ async function uploadManifestToS3(parameters) {
       },
     });
 
-    obj = JSON.stringify(parameters.manifest)
+    obj = parameters.manifest
     try {
       JSON.parse(obj);
       } 
@@ -168,6 +172,7 @@ async function uploadManifestToS3(parameters) {
           JSON.parse(obj)
           }
         catch (e){
+          console.log('Failed to Parse , Malformed data ')
             return getSignedUrl({
               url: `Failed to Parse , Malformed data `,
               dateLessThan: new Date(
@@ -194,6 +199,7 @@ async function uploadManifestToS3(parameters) {
           encoding: "utf-8",
         });}
       catch (e){
+        console.log('Failed to Write to file , Malformed data ')
           return getSignedUrl({
             url: `Failed to Write to file , Malformed data `,
             dateLessThan: new Date(
@@ -212,8 +218,10 @@ async function uploadManifestToS3(parameters) {
     };
     const uploadCommand = new PutObjectCommand(uploadParams);
     //upload CSV
+    console.log('Sending upload to S3Client')
     await s3Client.send(uploadCommand);
     //Return signed URL for CSV
+    console.log('returning Signed URL')
     return getSignedUrl({
       keyPairId: config.CLOUDFRONT_KEY_PAIR_ID,
       privateKey: config.CLOUDFRONT_PRIVATE_KEY,
