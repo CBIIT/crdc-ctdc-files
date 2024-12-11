@@ -43,7 +43,7 @@ router.get('/:fileId', async function(req, res, next) {
 router.post('/get-manifest-file-signed-url', async function(req, res, next) {
   try {
     // Check if the necessary data is in the request body
-    if (!req.body || !req.body.manifestData) {
+    if (!req.body || !req.body.manifest) {
       console.log('Missing manifest data in the request body.')
       return res.status(400).send({
         error: 'Bad Request',
@@ -173,6 +173,7 @@ async function uploadManifestToS3(parameters) {
       
       try{
         const manifestCsvTry = JSON.stringify(parameters.manifest)
+        console.log(parameters.manifest)
         console.log('Attempting to Stringify data')
         await fs.writeFile(tempCsvFilePath, manifestCsvTry, {
           encoding: "utf-8",
