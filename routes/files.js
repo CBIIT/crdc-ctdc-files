@@ -199,7 +199,18 @@ async function uploadManifestToS3(parameters) {
     const uploadCommand = new PutObjectCommand(uploadParams);
     //upload CSV
     console.log('Sending upload to S3Client')
+    try {
     await s3Client.send(uploadCommand);
+    }
+    catch{
+      return getSignedUrl({
+        url: `S3 failed connect `,
+        dateLessThan: new Date(
+          Date.now() + 1000 * config.SIGNED_URL_EXPIRY_SECONDS
+        ),
+    });
+
+    }
     //Return signed URL for CSV
     console.log('returning Signed URL')
     return getSignedUrl({
@@ -212,7 +223,12 @@ async function uploadManifestToS3(parameters) {
     });
   } catch (error) {
     console.error(error);
-    return error;
+    return getSignedUrl({
+      url: 'code exits uploadManifestToS3' + error,
+      dateLessThan: new Date(
+        Date.now() + 1000 * config.SIGNED_URL_EXPIRY_SECONDS
+      ),
+  });
   }
 }
 
