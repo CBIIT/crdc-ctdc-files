@@ -42,12 +42,6 @@ router.get('/:fileId', async function(req, res, next) {
 
 router.post('/get-manifest-file-signed-url', async function(req, res, next) {
   console.log('returning Signed URL')
-  console.log('CLOUDFRONT_KEY_PAIR_ID ' +  config.CLOUDFRONT_KEY_PAIR_ID)
-  console.log('CLOUDFRONT_PRIVATE_KEY    ' +  config.CLOUDFRONT_PRIVATE_KEY)
-  console.log('FILE_MANIFEST_BUCKET_NAME  ' +  config.FILE_MANIFEST_BUCKET_NAME)
-  console.log('AWS_REGION   ' +  config.AWS_REGION)
-  console.log('S3_ACCESS_KEY_ID   ' + config.S3_ACCESS_KEY_ID)
-  console.log('S3_SECRET_ACCESS_KEY  ' +  config.S3_SECRET_ACCESS_KEY)
   try {
     // Check if the necessary data is in the request body
     if (!req.body || !req.body.manifest) {
