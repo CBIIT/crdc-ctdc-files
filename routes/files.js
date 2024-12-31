@@ -57,55 +57,7 @@ router.post('/get-manifest-file-signed-url', async function(req, res, next) {
         message: 'Missing manifest data in the request body.'
       });
     }
-    // obj = {
-    //   "errors": [
-    //     {
-    //       "status": 400,
-    //       "error": "Bad Request",
-    //       "message": "Missing manifest data in the request body.",
-    //       "details": {
-    //         "field": "manifestData",
-    //         "required": true
-    //       }
-    //     },
-    //     {
-    //       "status": 401,
-    //       "error": "Unauthorized",
-    //       "message": "Authentication failed, please check your credentials.",
-    //       "details": {
-    //         "reason": "Invalid API key or token"
-    //       }
-    //     },
-    //     {
-    //       "status": 403,
-    //       "error": "Forbidden",
-    //       "message": "You do not have permission to perform this action.",
-    //       "details": {
-    //         "reason": "User does not have sufficient access rights"
-    //       }
-    //     },
-    //     {
-    //       "status": 404,
-    //       "error": "Not Found",
-    //       "message": "The requested resource could not be found.",
-    //       "details": {
-    //         "resource": "manifest",
-    //         "identifier": "manifestId123"
-    //       }
-    //     },
-    //     {
-    //       "status": 500,
-    //       "error": "Internal Server Error",
-    //       "message": "An unknown error occurred while processing the request.",
-    //       "details": {
-    //         "timestamp": "2024-12-09T12:34:56Z",
-    //         "traceId": "abc123xyz"
-    //       }
-    //     }
-    //   ]
-    // }
-    
-
+   
     let response = await uploadManifestToS3(req.body);
     
     res.send({
