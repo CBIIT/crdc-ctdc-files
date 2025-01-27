@@ -2,9 +2,7 @@ const express = require('express');
 const router = express.Router();
 const config = require('../config');
 const getURL = require('../connectors');
-const fs = require("fs").promises;
-const os = require("os");
-const path = require("path");
+
 
 //const {storeDownloadEvent} = require("../neo4j/neo4j-operations");
 
