@@ -54,19 +54,12 @@ const config = {
   mysql_database: process.env.MYSQL_DATABASE,
   session_timeout: process.env.SESSION_TIMEOUT ? parseInt(process.env.SESSION_TIMEOUT) * 1000 : 1000 * 30 * 60,  // 30 minutes
   cookie_secret: process.env.COOKIE_SECRET,
-  // Neo4j Connection
+  //NEO4j
   neo4j_uri: process.env.NEO4J_URI,
   neo4j_user: process.env.NEO4J_USER,
   neo4j_password: process.env.NEO4J_PASSWORD,
-  //CloudFront
-  AWS_REGION: process.env.AWS_REGION,
-  S3_ACCESS_KEY_ID: process.env.S3_ACCESS_KEY_ID,
-  S3_SECRET_ACCESS_KEY: process.env.S3_SECRET_ACCESS_KEY,
-  FILE_MANIFEST_BUCKET_NAME: process.env.FILE_MANIFEST_BUCKET_NAME,
-  CLOUDFRONT_KEY_PAIR_ID: process.env.CLOUDFRONT_KEY_PAIR_ID,
-  CLOUDFRONT_PRIVATE_KEY: process.env.CLOUDFRONT_PRIVATE_KEY,
-  CLOUDFRONT_DOMAIN: process.env.CLOUDFRONT_DOMAIN,
-  SIGNED_URL_EXPIRY_SECONDS: process.env.SIGNED_URL_EXPIRY_SECONDS,
+
+
 };
 
 if (!config.version) {
