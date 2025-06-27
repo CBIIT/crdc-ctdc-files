@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const config = require('../config');
 const getURL = require('../connectors');
+
+
 //const {storeDownloadEvent} = require("../neo4j/neo4j-operations");
 
 /* GET ping-ping for health checking. */
@@ -33,6 +35,9 @@ router.get('/:fileId', async function(req, res, next) {
   await getFile(req.params.fileId, req, res, next);
 });
 
+
+
+
 async function getFile(fileId, req, res, next) {
   console.log(fileId)
   try {
@@ -54,5 +59,9 @@ async function getFile(fileId, req, res, next) {
     res.status(status).send(message);
   }
 };
+
+
+
+
 
 module.exports = router;

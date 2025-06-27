@@ -54,10 +54,12 @@ const config = {
   mysql_database: process.env.MYSQL_DATABASE,
   session_timeout: process.env.SESSION_TIMEOUT ? parseInt(process.env.SESSION_TIMEOUT) * 1000 : 1000 * 30 * 60,  // 30 minutes
   cookie_secret: process.env.COOKIE_SECRET,
-  // Neo4j Connection
+  //NEO4j
   neo4j_uri: process.env.NEO4J_URI,
   neo4j_user: process.env.NEO4J_USER,
   neo4j_password: process.env.NEO4J_PASSWORD,
+
+
 };
 
 if (!config.version) {
