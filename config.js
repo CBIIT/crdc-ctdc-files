@@ -1,7 +1,11 @@
 const { removeTrailingSlashes } = require('./utils');
 const fs = require('fs');
 const dotenv = require('dotenv')
-dotenv.config();
+
+// Load .env.test in test environment, otherwise load .env
+const envFile = process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
+dotenv.config({ path: envFile });
+
 const DEFAULT_EXPIRATION_SECONDS = 60 * 60 * 24; // 24 hours
 
 const INDEXD = 'INDEXD';
