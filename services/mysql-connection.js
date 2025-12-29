@@ -1,4 +1,4 @@
-const mysql = require('mysql');
+const mysql = require('mysql2');
 const config = require('../config.js');
 
 const connection = mysql.createPool({
@@ -24,7 +24,7 @@ const getToken = (req, res) => {
                     console.log(err);
                     response = { error: "An error occurred while querying the database, see logs for details"};
                 }
-                else if (!rows || !rows[0] || !rows[0].){
+                else if (!rows || !rows[0] || !rows[0].data || !rows[0].data.token){
                     response = { error: "Session expires"};
                 }
                 else{
