@@ -45,14 +45,19 @@ async def gen3_health_check() -> Dict:
             )
             response.raise_for_status()
             
-            version_info = response.json()
+            # Try to parse JSON, but don't fail if it's not JSON
+            try:
+                version_info = response.json()
+                version = version_info.get("version", "unknown")
+            except:
+                version = "available"
             
             return {
                 "status": "ok",
                 "timestamp": datetime.utcnow().isoformat(),
                 "gen3_api": settings.gen3_base_url,
                 "gen3_reachable": True,
-                "gen3_version": version_info.get("version", "unknown")
+                "gen3_version": version
             }
             
     except httpx.RequestError as e:

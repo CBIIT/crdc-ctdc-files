@@ -7,6 +7,8 @@
 
 A FastAPI-based microservice for streaming Gen3 files with user-specific token authentication. This service acts as a secure proxy that validates user permissions and streams files without exposing Gen3 URLs to the frontend.
 
+> **🚀 Want to get started quickly?** See [QUICKSTART.md](QUICKSTART.md) for step-by-step running instructions.
+
 ## Features
 
 - ✅ **Token-based Authentication**: Uses user's Gen3 tokens for per-user authorization
