@@ -8,7 +8,7 @@ Following environmental variables are needed
 
 - VERSION : version number
 - DATE : build date
-- URL_SRC : source for signed URL, can be one of INDEXD, CLOUD_FRONT, SIGNED_S3 or DUMMY (default)
+- URL_SRC : source for signed URL/stream, can be one of INDEXD, CLOUD_FRONT, SIGNED_S3, DUMMY, DCF or GEN3
 - BACKEND_URL : URL of bento GraphQL backend
 - AUTH_ENABLED: set to "true" to enable authentication
 - AUTHORIZATION_ENABLED: set to "true" to enable file acl authentication
@@ -28,6 +28,9 @@ Following environmental variables are needed
 Following variable is only needed when AUTH_ENABLED is set to true
 - AUTH_URL : URL of bento-auth service
 
+Following variable is only needed for GEN3 source
+- GEN3_AUTH_URL : URL of Fence/local auth service (defaults to AUTH_URL if unset)
+
 Following variables are only needed for specific source
 
 ### INDEXD 
@@ -41,3 +44,6 @@ Following variables are only needed for specific source
 
 ### SIGNED_S3
 - URL_EXPIRES_IN_SECONDS : expiration for signed URL
+
+### GEN3
+- GEN3_FILE_URL : base URL for Gen3 file API (placeholder; update per environment)

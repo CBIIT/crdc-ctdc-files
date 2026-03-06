@@ -23,6 +23,9 @@ switch (config.source) {
   case config.sourceNames.DCF:
     getUrl = require('./dcfConnector');
     break;
+  case config.sourceNames.GEN3:
+    getUrl = require('./gen3Connector');
+    break;
   default:
     throw `This shouldn't happen, invalid URL source: '${config.source}'`;
 }

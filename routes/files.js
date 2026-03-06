@@ -45,7 +45,24 @@ async function getFile(fileId, req, res, next) {
     console.log("Get Cookie ");
     let response = await getURL(fileId, req, res);
     //await storeDownloadEvent(req.session?.userInfo, fileId);
-     res.status(response.status).send(response.message);
+    if (response && response.stream) {
+      res.status(response.status || 200);
+      if (response.headers) {
+        Object.entries(response.headers).forEach(([key, value]) => {
+          if (value) {
+            res.setHeader(key, value);
+          }
+        });
+      }
+      response.stream.on('error', next);
+      return response.stream.pipe(res);
+    }
+
+    if (response && response.status !== undefined && response.message !== undefined) {
+      return res.status(response.status).send(response.message);
+    }
+
+    return res.status(200).send(response);
   } catch (e) {
     console.error(e);
     let status = 400;
