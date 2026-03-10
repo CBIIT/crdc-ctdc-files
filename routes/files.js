@@ -36,8 +36,6 @@ router.get('/:fileId', async function(req, res, next) {
 });
 
 
-
-
 async function getFile(fileId, req, res, next) {
   console.log(fileId)
   try {
@@ -61,6 +59,25 @@ async function getFile(fileId, req, res, next) {
 };
 
 
+/**
+ * NEW: Bulk Download Route
+ * POST /api/files/download-all
+ * Body: { "guids": ["guid1", "guid2"] }
+ */
+router.post('/download-all', async function(req, res, next) {
+  try {
+    const { guids } = req.body;
+    if (!guids || !Array.isArray(guids)) {
+      return res.status(400).send("A list of GUIDs is required.");
+    }
+    
+    // Call the new bulk downloader
+    await getURL.downloadMultipleFiles(guids, req, res);
+  } catch (e) {
+    console.error(e);
+    res.status(e.status || 500).send("Bulk download failed. Error message: " + (e.message || "Unknown error"));
+  }
+});
 
 
 

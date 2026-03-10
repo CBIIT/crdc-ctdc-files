@@ -1,5 +1,7 @@
 const nodeFetch = require('node-fetch');
 const mysql = require('mysql2');
+const archiver = require('archiver');
+const pLimit = require('p-limit');
 const config = require('../config.js');
 
 
@@ -155,6 +157,51 @@ const fetchDCFFile = async (file_id, accessToken) => {
 
 
 /**
+ * NEW: Fetches multiple files and pipes them into a ZIP archive
+ */
+const downloadMultipleFiles = async (fileIds, req, res) => {
+    const token = await getDCFTokenFromDatabase(req, connection);
+    if (token === "NA") {
+        return res.status(401).send("Failed to retrieve valid token");
+    }
+
+    const limit = pLimit(5); // Process 5 files at a time
+    const archive = archiver('zip', { zlib: { level: 5 } });
+
+    // Set headers for ZIP download
+    res.attachment('ctdc_data_bundle.zip');
+    archive.pipe(res);
+
+    const tasks = fileIds.map((file_id) =>
+        limit(async () => {
+            try {
+                // 1. Get Signed URL from DCF
+                const url = `${config.DCF_File_URL}/${file_id}`;
+                const dcfResponse = await nodeFetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!dcfResponse.ok) throw new Error(`DCF Auth Failed for ${file_id}`);
+                const { url: signedUrl } = await dcfResponse.json();
+
+                // 2. Stream the actual file content from the signed URL
+                const fileContent = await nodeFetch(signedUrl);
+                
+                // 3. Append to ZIP
+                archive.append(fileContent.body, { name: file_id });
+            } catch (err) {
+                console.error(`Error processing ${file_id}:`, err.message);
+            }
+        })
+    );
+
+    await Promise.all(tasks);
+    archive.finalize();
+};
+
+
+
+/**
  * The main function that orchestrates the retrieval of a DCF token and fetching of a file.
  * Logs the process and handles any failures encountered along the way.
  * @param {String} file_id - The ID of the file to be fetched.
@@ -177,3 +224,5 @@ module.exports = async (file_id, req) => {
         return fetchDCFFile(file_id, token);
     }
 };
+
+module.exports.downloadMultipleFiles = downloadMultipleFiles;
