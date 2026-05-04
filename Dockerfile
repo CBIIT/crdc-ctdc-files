@@ -1,7 +1,7 @@
 FROM node:24-alpine AS fnl_base_image
 
-# Update npm to latest version to fix picomatch CVE-2026-33671
-RUN npm install -g npm@latest
+# Update npm to 11.13.0 to fix picomatch CVE-2026-33671
+RUN npm install -g npm@11.13.0
 
 ENV PORT=8081
 ENV NODE_ENV=production
