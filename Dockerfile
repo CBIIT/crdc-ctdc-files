@@ -13,7 +13,4 @@ COPY  --chown=node:node . .
 
 EXPOSE 8081
 
-# Run as non-root user for security
-USER node
-
 CMD [ "node", "./bin/www" ]
