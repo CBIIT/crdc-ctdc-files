@@ -1,0 +1,3 @@
+interface:
+  display_name: Codebase Doc Writer
+  short_description: Generate architecture and implementation docs from an existing repo

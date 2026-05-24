@@ -31,4 +31,8 @@
     "jest": "^30.3.0",
     "nodemon": "^3.1.14"
   }
+  ,
+  "jest": {
+    "setupFiles": ["<rootDir>/test/jest.setup.js"]
+  }
 }

@@ -21,6 +21,7 @@ const C3DC = 'C3DC';
 const CTDC = 'CTDC';
 const CDS = 'CDS';
 const DCF = 'DCF';
+const RAS_DCF = 'RAS_DCF';
 
 const config = {
   projectNames: {
@@ -41,6 +42,7 @@ const config = {
     DCF,
   },
   source: 'DCF',
+  res_passport_validation_url: process.env.RAS_PASSPORT_VALIDATION_URL || 'https://stsstg.nih.gov/passport/validate',
   fake: process.env.FAKE ? (process.env.FAKE.toLowerCase() === 'true') : false, // This is used to fake CloudFront call locally
   backendUrl: removeTrailingSlashes(process.env.BACKEND_URL),
   authorizationEnabled: process.env.AUTHORIZATION_ENABLED ? process.env.AUTHORIZATION_ENABLED.toLowerCase() === 'true' : false,
@@ -64,6 +66,8 @@ const config = {
   neo4j_password: process.env.NEO4J_PASSWORD,
 
 
+
+
 };
 
 if (!config.version) {
@@ -84,6 +88,12 @@ function readPrivateKey(keyPath) {
 }
 
 switch (config.source) {
+  case RAS_DCF:
+    config.DCF_FILE_URL_RAS = removeTrailingSlashes(process.env.DCF_FIFL_URL_RAS);
+    if (!config.DCF_FILE_URL_RAS) {
+      throw "DCF_FILE_URL_RAS is not set!";
+    }
+    break;
   case DCF:
     config.DCF_File_URL = removeTrailingSlashes(process.env.DCF_FILE_URL);
     if (!config.DCF_File_URL) {
