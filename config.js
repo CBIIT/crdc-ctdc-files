@@ -64,6 +64,9 @@ const config = {
   neo4j_uri: process.env.NEO4J_URI,
   neo4j_user: process.env.NEO4J_USER,
   neo4j_password: process.env.NEO4J_PASSWORD,
+  // NIH CADR logging identifiers
+  nih_ico: process.env.NIH_ICO || 'NCI',
+  cadr_name: process.env.CADR_NAME || 'Cancer Data Service',
 
 
 
