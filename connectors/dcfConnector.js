@@ -1,5 +1,5 @@
 const nodeFetch = require('node-fetch');
-const mysql = require('mysql');
+const mysql = require('mysql2');
 const config = require('../config.js');
 
 
