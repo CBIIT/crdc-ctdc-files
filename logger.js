@@ -1,7 +1,7 @@
 const winston = require('winston');
 const { isCaseInsensitiveEqual } = require('./utils/string-util');
 
-const APP_NAME = process.env.APP_NAME || 'CTDC-AuthN';
+const APP_NAME = process.env.APP_NAME || 'CTDC-Files';
 const CADR_NAME = process.env.CADR_NAME || 'CTDC(Clinical and Translational Data Commons)';
 const NIH_ICO = process.env.NIH_ICO || 'NCI';
 const DEST_IP = process.env.DEST_IP || undefined;
