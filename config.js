@@ -90,57 +90,12 @@ function readPrivateKey(keyPath) {
   return fs.readFileSync(keyPath, 'utf8');
 }
 
-switch (config.source) {
-  case RAS_DCF:
-    config.DCF_FILE_URL_RAS = removeTrailingSlashes(process.env.DCF_FIFL_URL_RAS);
-    if (!config.DCF_FILE_URL_RAS) {
-      throw "DCF_FILE_URL_RAS is not set!";
-    }
-    break;
-  case DCF:
-    config.DCF_File_URL = removeTrailingSlashes(process.env.DCF_FILE_URL);
-    if (!config.DCF_File_URL) {
-      throw "DCF_File_URL is not set!";
-    }
-    break;
-  case INDEXD:
-    config.indexDUrl = removeTrailingSlashes(process.env.INDEXD_URL);
-    if (!config.indexDUrl) {
-      throw "INDEXD_URL is not set!";
-    }
-    break;
-  case CLOUD_FRONT:
-    config.cfUrl = removeTrailingSlashes(process.env.CF_URL);
-    config.cfKeyPairId = process.env.CF_KEY_PAIR_ID;
-    config.cfPrivateKey = process.env.CF_PRIVATE_KEY;
-    config.urlExpiresInSeconds = process.env.URL_EXPIRES_IN_SECONDS || DEFAULT_EXPIRATION_SECONDS
-    if (!config.cfUrl) {
-      throw "CF_URL is not set!";
-    }
-    if (!config.cfKeyPairId) {
-      throw "CF_KEY_PAIR_ID is not set!";
-    }
-    if (!config.cfPrivateKey) {
-      throw "CF_PRIVATE_KEY is not set!";
-    }
-    if (!config.backendUrl) {
-      throw 'BACKEND_URL is not set!';
-    }
-    break;
-  case SIGNED_S3:
-    // config.region = process.env.REGION || 'us-east-1';
-    config.urlExpiresInSeconds = process.env.URL_EXPIRES_IN_SECONDS || DEFAULT_EXPIRATION_SECONDS
-    break;
-  case LOCAL:
-    // Todo: add local support here
-    break;
-  case PUBLIC_S3:
-    // Todo: add public S3 support here
-    break;
-  case DUMMY:
-    break;
-  default:
-    throw `Unknown Source: '${config.source}'`;
-}
+config.DCF_FILE_URL_RAS = removeTrailingSlashes(process.env.DCF_FILE_URL_RAS || '');
+config.DCF_File_URL = removeTrailingSlashes(process.env.DCF_FILE_URL || '');
+config.indexDUrl = removeTrailingSlashes(process.env.INDEXD_URL || '');
+config.cfUrl = removeTrailingSlashes(process.env.CF_URL || '');
+config.cfKeyPairId = process.env.CF_KEY_PAIR_ID || '';
+config.cfPrivateKey = process.env.CF_PRIVATE_KEY || '';
+config.urlExpiresInSeconds = process.env.URL_EXPIRES_IN_SECONDS || DEFAULT_EXPIRATION_SECONDS
 
 module.exports = config;
