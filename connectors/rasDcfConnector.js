@@ -155,7 +155,7 @@ const getPassportFromDatabase = async (req, pool) => {
             if (!rows || !rows[0] || !rows[0].data) throw new Error("Session expires or not found");
 
             const parsedData = JSON.parse(rows[0].data);
-            const passport = parsedData?.userInfo?.passport_jwt_v11 || "";
+            const passport = parsedData?.userInfo?.userInfo?.passport_jwt_v11 || "";
 
             if (typeof passport !== 'string' || passport.trim() === '') {
                 throw new Error("Invalid passport format");
