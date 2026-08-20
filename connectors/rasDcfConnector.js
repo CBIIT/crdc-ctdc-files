@@ -1,6 +1,7 @@
 const nodeFetch = require('node-fetch');
 const mysql = require('mysql2');
 const config = require('../config.js');
+const logger = require('../logger');
 
 
 // Setting up a MySQL connection pool from the provided configurations.
@@ -17,10 +18,18 @@ const connection = mysql.createPool({
 
 
 const parseCookies = (cookieHeader) => {
+    logger.info({
+        event_type: 'parse_cookies',
+        has_cookie_header: Boolean(cookieHeader),
+    });
     const list = {};
     cookieHeader && cookieHeader.split(';').forEach((cookie) => {
         const parts = cookie.split('=');
         list[parts.shift().trim()] = decodeURI(parts.join('='));
+    });
+    logger.debug({
+        event_type: 'parse_cookies_complete',
+        cookie_count: Object.keys(list).length,
     });
     return list;
 };
@@ -34,15 +43,26 @@ const parseCookies = (cookieHeader) => {
  * @returns {String|null} The extracted session ID or null if not available.
  */
 const getSessionIDFromCookie = (req) => {
-    console.log("getSessionIDFromCookie");
-    const cookies = parseCookies(req.headers.cookie);
-     
-    console.log(cookies["connect.sid"]);
+    logger.info({
+        event_type: 'get_session_id_from_cookie',
+        has_cookie_header: Boolean(req && req.headers && req.headers.cookie),
+    });
+    const cookies = parseCookies(req && req.headers && req.headers.cookie);
+
     if (!cookies["connect.sid"]) {
+        logger.warn({
+            event_type: 'session_id_missing',
+            path: req && req.originalUrl,
+        });
         return null;
     }
-    console.log(cookies["connect.sid"].match('.*[.]')[0].slice(4, -1));
-    return cookies["connect.sid"].match('.*[.]')[0].slice(4, -1);
+
+    const sessionId = cookies["connect.sid"].match('.*[.]')[0].slice(4, -1);
+    logger.info({
+        event_type: 'session_id_extracted',
+        session_id: sessionId,
+    });
+    return sessionId;
 };
 
 
@@ -53,9 +73,23 @@ const getSessionIDFromCookie = (req) => {
  * @returns {Promise<Object>} A promise resolving with a database connection.
  */
 const getDatabaseConnection = (pool) => new Promise((resolve, reject) => {
+    logger.info({
+        event_type: 'db_connection_request',
+        pool_exists: Boolean(pool),
+    });
     pool.getConnection((err, connection) => {
-        if (err) reject(err);
-        else resolve(connection);
+        if (err) {
+            logger.error({
+                event_type: 'db_connection_error',
+                message: err && err.message ? err.message : String(err),
+            });
+            reject(err);
+        } else {
+            logger.info({
+                event_type: 'db_connection_acquired',
+            });
+            resolve(connection);
+        }
     });
 });
 
@@ -71,9 +105,25 @@ const getDatabaseConnection = (pool) => new Promise((resolve, reject) => {
  * @returns {Promise<Array|Object>} A promise resolving with the query results.
  */
 const queryDatabase = (connection, query, values = []) => new Promise((resolve, reject) => {
+    logger.info({
+        event_type: 'db_query_start',
+        query_preview: query && query.substring(0, 120),
+    });
     connection.query(query, values, (err, results) => {
-        if (err) reject(err);
-        else resolve(results);
+        if (err) {
+            logger.error({
+                event_type: 'db_query_error',
+                message: err && err.message ? err.message : String(err),
+                query_preview: query && query.substring(0, 120),
+            });
+            reject(err);
+        } else {
+            logger.info({
+                event_type: 'db_query_success',
+                row_count: Array.isArray(results) ? results.length : (results ? 1 : 0),
+            });
+            resolve(results);
+        }
     });
 });
 
@@ -87,12 +137,19 @@ const queryDatabase = (connection, query, values = []) => new Promise((resolve, 
  * @returns {String} A promise resolving with the DCF token or -1 in case of failure.
  */
 const getPassportFromDatabase = async (req, pool) => {
-    console.log("getDCFTokenFromDatabase");
+    logger.info({
+        event_type: 'passport_lookup_start',
+        has_request: Boolean(req),
+        pool_exists: Boolean(pool),
+    });
     try {
         const connection = await getDatabaseConnection(pool);
         try {
-            const sessionID = getSessionIDFromCookie(req); // Example sessionID, replace with actual logic
-            console.log("sessionID: ", sessionID)
+            const sessionID = getSessionIDFromCookie(req);
+            logger.info({
+                event_type: 'passport_session_lookup',
+                session_id: sessionID,
+            });
             if (!sessionID || sessionID==null) throw new Error("No session ID found");
             const rows = await queryDatabase(connection, "SELECT * FROM sessions WHERE session_id = ?", [sessionID]);
             if (!rows || !rows[0] || !rows[0].data) throw new Error("Session expires or not found");
@@ -100,19 +157,23 @@ const getPassportFromDatabase = async (req, pool) => {
             const parsedData = JSON.parse(rows[0].data);
             const passport = parsedData?.userInfo?.passport_jwt_v11 || "";
 
-            // validate the passport is a non-empty string
             if (typeof passport !== 'string' || passport.trim() === '') {
                 throw new Error("Invalid passport format");
             }
-            //validate the passport is a valide or not
-            
 
+            logger.info({
+                event_type: 'passport_lookup_success',
+                has_passport: true,
+            });
             return passport;
         } finally {
             connection.release();
         }
     } catch (error) {
-        console.error("Error in getPassportFromDatabase:", error.message);
+        logger.error({
+            event_type: 'passport_lookup_error',
+            message: error && error.message ? error.message : String(error),
+        });
         return "NA";
     }
 };
@@ -126,13 +187,26 @@ const getPassportFromDatabase = async (req, pool) => {
  * @returns { Object } 
  */
 const fetchDCFFile = async (file_id, passport) => {
+    logger.info({
+        event_type: 'dcf_fetch_start',
+        file_id,
+        has_passport: Boolean(passport),
+    });
     if (!config.DCF_FILE_URL_RAS) {
+        logger.error({
+            event_type: 'dcf_fetch_missing_config',
+            message: 'DCF_FILE_URL_RAS not configured',
+        });
         return { status: 500, message: 'DCF_FILE_URL_RAS not configured' };
     }
 
     const tryPostAccess = async (url) => {
         try {
             const body = JSON.stringify({ passports: [passport] });
+            logger.info({
+                event_type: 'dcf_access_request',
+                url,
+            });
             const resp = await nodeFetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -143,10 +217,23 @@ const fetchDCFFile = async (file_id, passport) => {
             try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
 
             if (!resp.ok) {
+                logger.warn({
+                    event_type: 'dcf_access_response_not_ok',
+                    status: resp.status,
+                    statusText: resp.statusText,
+                });
                 return { ok: false, status: resp.status, statusText: resp.statusText, body: data };
             }
+            logger.info({
+                event_type: 'dcf_access_response_ok',
+                status: resp.status,
+            });
             return { ok: true, status: resp.status, body: data };
         } catch (err) {
+            logger.error({
+                event_type: 'dcf_access_request_error',
+                message: err && err.message ? err.message : String(err),
+            });
             return { ok: false, status: 0, statusText: err.message };
         }
     };
@@ -155,16 +242,37 @@ const fetchDCFFile = async (file_id, passport) => {
         let accessId = "s3";
         const accessUrl = `${config.DCF_FILE_URL_RAS}/${file_id}/access/${accessId}`;
         console.log('Attempting POST to access with access_id:', accessUrl);
-        result = await tryPostAccess(accessUrl);
+        const result = await tryPostAccess(accessUrl);
         if (result.ok) {
             const respBody = result.body;
             if (respBody && typeof respBody === 'object' && respBody.url) {
+                logger.info({
+                    event_type: 'dcf_fetch_success',
+                    file_id,
+                    url: respBody.url,
+                });
                 return { status: 200, message: respBody.url };
             }
+            logger.info({
+                event_type: 'dcf_fetch_success',
+                file_id,
+                response_body: respBody,
+            });
             return { status: 200, message: respBody };
         }
+        logger.warn({
+            event_type: 'dcf_fetch_failed',
+            file_id,
+            status: result.status || 500,
+            message: result.body || result.statusText || 'Access request failed',
+        });
         return { status: result.status || 500, message: result.body || result.statusText || 'Access request failed' };
     } catch (err) {
+        logger.error({
+            event_type: 'dcf_fetch_exception',
+            file_id,
+            message: err && err.message ? err.message : String(err),
+        });
         return { status: 500, message: 'Error fetching metadata or requesting access: ' + err.message };
     }
 };
@@ -176,7 +284,17 @@ const fetchDCFFile = async (file_id, passport) => {
  * @returns {Object} { ok, status, body }
  */
 const isValidatePassport = async (visa) => {
-    if (!visa) return { ok: false, status: 400, body: 'No visa provided' };
+    logger.info({
+        event_type: 'passport_validation_start',
+        has_visa: Boolean(visa),
+    });
+    if (!visa) {
+        logger.warn({
+            event_type: 'passport_validation_missing',
+            message: 'No visa provided',
+        });
+        return { ok: false, status: 400, body: 'No visa provided' };
+    }
     const url = config.res_passport_validation_url;
     try {
         const params = new URLSearchParams();
@@ -191,10 +309,19 @@ const isValidatePassport = async (visa) => {
         const text = await resp.text().catch(() => '');
         const trimmed = (text || '').toString().trim();
 
-        // Per spec: a plain text response equal to 'Valid' (case-sensitive) means success.
         const isValid = trimmed === 'Valid';
+        logger.info({
+            event_type: 'passport_validation_result',
+            url,
+            is_valid: isValid,
+            response_status: resp && resp.status,
+        });
         return isValid;
     } catch (err) {
+        logger.error({
+            event_type: 'passport_validation_error',
+            message: err && err.message ? err.message : String(err),
+        });
         return false;
     }
 };
@@ -207,27 +334,53 @@ const isValidatePassport = async (visa) => {
  * @param {Object} req - The request object, used to retrieve the session ID and DCF token.
  */
 module.exports = async (file_id, req) => {
-    console.log("This is DCF Connector ");
+    logger.info({
+        event_type: 'ras_dcf_connector_start',
+        file_id,
+        has_request: Boolean(req),
+    });
     const connectionPool = connection;
-    console.log("MYSQL Connection Completed ");
 
     const passport = await getPassportFromDatabase(req, connectionPool);
 
-    console.log("Access Token: ", passport);
+    logger.info({
+        event_type: 'passport_status',
+        file_id,
+        has_passport: passport && passport !== 'NA',
+        passport_value: passport && passport !== 'NA' ? 'present' : 'missing',
+    });
     if (passport == "NA") {
+        logger.warn({
+            event_type: 'ras_dcf_connector_token_failure',
+            file_id,
+            message: 'Failed to retrieve valid token, cannot proceed with file fetch',
+        });
          return {
             status: 500,
             message: "Failed to retrieve valid token, cannot proceed with file fetch"
         }
     } else {
-        // Validate passport/visa before requesting DCF access
         const isValid = await isValidatePassport(passport);
-        // passport usually expires in 12 hours
-        console.log('Passport validation result:', isValid);
+        logger.info({
+            event_type: 'passport_validation_outcome',
+            file_id,
+            is_valid: isValid,
+        });
         if (!isValid) {
+            logger.warn({
+                event_type: 'ras_dcf_connector_validation_failed',
+                file_id,
+                message: 'Passport validation failed',
+            });
             return { status: 500, message: 'Passport validation failed' };
         }
-        return fetchDCFFile(file_id, passport);
+        const result = await fetchDCFFile(file_id, passport);
+        logger.info({
+            event_type: 'ras_dcf_connector_end',
+            file_id,
+            status: result && result.status,
+        });
+        return result;
     }
 };
 
