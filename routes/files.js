@@ -110,6 +110,8 @@ async function getFile(fileId, req, res, next, source) {
     path: req.originalUrl || req.url,
     method: req.method,
   });
+
+  
   const startTime = Date.now();
   try {
     const cookie = req.headers.cookie;
@@ -133,8 +135,8 @@ async function getFile(fileId, req, res, next, source) {
 
     logger.logNihCadrFields('Download', {
       req,
-      userInfo,
-      idp: userInfo.IDP,
+      userInfo: userInfo.userInfo,
+      idp: userInfo.userInfo.IDP,
       statusCode: response.status,
     });
 

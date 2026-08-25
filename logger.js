@@ -90,7 +90,7 @@ const NA = 'N/A';
  */
 function logNihCadrFields(eventType, { req, userInfo, idp, statusCode = 200 } = {}) {
     // NIH CADR field-by-field logging only applies to the RAS identity provider
-    if (!isCaseInsensitiveEqual(idp, "RAS")) return;
+    // if (!isCaseInsensitiveEqual(idp, "RAS")) return;
 
     const safeReq = req || {};
     const safeUserInfo = userInfo || {};

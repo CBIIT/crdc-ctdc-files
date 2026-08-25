@@ -21,7 +21,7 @@ const C3DC = 'C3DC';
 const CTDC = 'CTDC';
 const CDS = 'CDS';
 const DCF = 'DCF';
-const RAS_DCF = 'RAS_DCF';
+const RAS_DCF = 'RAS';
 
 const config = {
   projectNames: {
@@ -40,6 +40,7 @@ const config = {
     SIGNED_S3,
     DUMMY,
     DCF,
+    RAS_DCF,
   },
   source: 'DCF',
   res_passport_validation_url: process.env.RAS_PASSPORT_VALIDATION_URL || 'https://stsstg.nih.gov/passport/validate',

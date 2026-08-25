@@ -8,7 +8,7 @@ const CONNECTOR_MODULES = {
   [config.sourceNames.PUBLIC_S3]: './publicS3Connector',
   [config.sourceNames.DUMMY]: './dummyConnector',
   [config.sourceNames.DCF]: './dcfConnector',
-  RAS: './rasDcfConnector',
+  [config.sourceNames.RAS_DCF]: './rasDcfConnector',
 };
 
 const cache = {};
