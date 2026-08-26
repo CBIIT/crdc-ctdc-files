@@ -26,6 +26,16 @@ describe('session user info utilities', () => {
     expect(getSessionIdFromCookie(req)).toBe('session-123');
   });
 
+  test('extracts the session ID from an encoded connect.sid cookie', () => {
+    const req = {
+      headers: {
+        cookie: 'connect.sid=s%3Asession-123.signature',
+      },
+    };
+
+    expect(getSessionIdFromCookie(req)).toBe('session-123');
+  });
+
   test('loads userInfo from the serialized session database row', async () => {
     const userInfo = {
       email: 'user@example.org',
@@ -42,7 +52,7 @@ describe('session user info utilities', () => {
 
     expect(result).toEqual(userInfo);
     expect(mockPool.query).toHaveBeenCalledWith(
-      'SELECT data FROM sessions WHERE session_id = ?',
+      'SELECT data FROM ctdc.sessions WHERE session_id = ?',
       ['session-123'],
       expect.any(Function)
     );

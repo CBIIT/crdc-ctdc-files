@@ -1,10 +1,14 @@
 function parseCookies(cookieHeader) {
-  const cookies = {};
+  const list = {};
   cookieHeader && cookieHeader.split(';').forEach((cookie) => {
-    const parts = cookie.split('=');
-    cookies[parts.shift().trim()] = decodeURI(parts.join('='));
+    const separatorIndex = cookie.indexOf('=');
+    if (separatorIndex === -1) return;
+
+    const name = cookie.slice(0, separatorIndex).trim();
+    const value = cookie.slice(separatorIndex + 1);
+    list[name] = decodeURIComponent(value);
   });
-  return cookies;
+  return list;
 }
 
 function getSessionIdFromCookie(req) {
@@ -12,9 +16,13 @@ function getSessionIdFromCookie(req) {
   const sessionCookie = cookies['connect.sid'];
   if (!sessionCookie) return null;
 
-  const sessionId = sessionCookie.match(/^s:(.+)\./);
-  return sessionId ? sessionId[1] : null;
+  const match = sessionCookie.match(/^s:([^.]*)\./);
+  console.log(match ? match[1] : null);
+  return match ? match[1] : null;
 }
+
+
+
 
 function getDatabaseConnection(pool) {
   return new Promise((resolve, reject) => {
@@ -26,10 +34,16 @@ function getDatabaseConnection(pool) {
 }
 
 function queryDatabase(connection, query, values = []) {
+  console.log("Executing query:", query, "with values:", values);
   return new Promise((resolve, reject) => {
     connection.query(query, values, (error, results) => {
-      if (error) reject(error);
-      else resolve(results);
+      if (error) {
+        console.log("Query execution error:", error);
+        reject(error);
+      } else {
+         console.log("Query executed successfully, results:", results);
+        resolve(results);
+      }
     });
   });
 }
