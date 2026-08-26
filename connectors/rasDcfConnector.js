@@ -2,6 +2,12 @@ const nodeFetch = require('node-fetch');
 const mysql = require('mysql2');
 const config = require('../config.js');
 const logger = require('../logger');
+const {
+    parseCookies,
+    getSessionIdFromCookie,
+    getDatabaseConnection,
+    queryDatabase,
+} = require('../utils/session-database');
 
 
 // Setting up a MySQL connection pool from the provided configurations.
@@ -16,124 +22,8 @@ const connection = mysql.createPool({
 
 
 
-
-const parseCookies = (cookieHeader) => {
-    logger.info({
-        event_type: 'parse_cookies',
-        has_cookie_header: Boolean(cookieHeader),
-    });
-    const list = {};
-    cookieHeader && cookieHeader.split(';').forEach((cookie) => {
-        const parts = cookie.split('=');
-        list[parts.shift().trim()] = decodeURI(parts.join('='));
-    });
-    logger.debug({
-        event_type: 'parse_cookies_complete',
-        cookie_count: Object.keys(list).length,
-    });
-    return list;
-};
-
-
-
 /**
- * Extracts the session ID from the cookies in the request.
- * Logs and returns the session ID if present, or null if not found.
- * @param {Object} req - The incoming HTTP request containing cookies.
- * @returns {String|null} The extracted session ID or null if not available.
- */
-const getSessionIDFromCookie = (req) => {
-    logger.info({
-        event_type: 'get_session_id_from_cookie',
-        has_cookie_header: Boolean(req && req.headers && req.headers.cookie),
-    });
-    const cookies = parseCookies(req && req.headers && req.headers.cookie);
-
-    if (!cookies["connect.sid"]) {
-        logger.warn({
-            event_type: 'session_id_missing',
-            path: req && req.originalUrl,
-        });
-        return null;
-    }
-
-    const sessionId = cookies["connect.sid"].match('.*[.]')[0].slice(4, -1);
-    logger.info({
-        event_type: 'session_id_extracted',
-        session_id: sessionId,
-    });
-    return sessionId;
-};
-
-
-/**
- * Asynchronously gets a database connection from the connection pool.
- * Logs the attempt and result of getting a connection.
- * @param {Object} pool - The database connection pool.
- * @returns {Promise<Object>} A promise resolving with a database connection.
- */
-const getDatabaseConnection = (pool) => new Promise((resolve, reject) => {
-    logger.info({
-        event_type: 'db_connection_request',
-        pool_exists: Boolean(pool),
-    });
-    pool.getConnection((err, connection) => {
-        if (err) {
-            logger.error({
-                event_type: 'db_connection_error',
-                message: err && err.message ? err.message : String(err),
-            });
-            reject(err);
-        } else {
-            logger.info({
-                event_type: 'db_connection_acquired',
-            });
-            resolve(connection);
-        }
-    });
-});
-
-
-
-
-/**
- * Performs a database query using an established connection.
- * Logs the query execution attempt and outcome.
- * @param {Object} connection - The database connection to use for the query.
- * @param {String} query - The SQL query string to execute.
- * @param {Array} values - Parameters to pass to the query for prepared statements.
- * @returns {Promise<Array|Object>} A promise resolving with the query results.
- */
-const queryDatabase = (connection, query, values = []) => new Promise((resolve, reject) => {
-    logger.info({
-        event_type: 'db_query_start',
-        query_preview: query && query.substring(0, 120),
-    });
-    connection.query(query, values, (err, results) => {
-        if (err) {
-            logger.error({
-                event_type: 'db_query_error',
-                message: err && err.message ? err.message : String(err),
-                query_preview: query && query.substring(0, 120),
-            });
-            reject(err);
-        } else {
-            logger.info({
-                event_type: 'db_query_success',
-                row_count: Array.isArray(results) ? results.length : (results ? 1 : 0),
-            });
-            resolve(results);
-        }
-    });
-});
-
-
-
-/**
- * Retrieves the DCF token from the database using the session ID obtained from the request cookie.
- * Logs the process of retrieving the token and any errors or issues encountered.
- * @param {Object} req - The incoming HTTP request to extract the session ID from.
- * @param {Object} pool - The database connection pool to use for queries.
+ * Retrieves the DCF passport from the session database.
  * @returns {String} A promise resolving with the DCF token or -1 in case of failure.
  */
 const getPassportFromDatabase = async (req, pool) => {
@@ -145,7 +35,7 @@ const getPassportFromDatabase = async (req, pool) => {
     try {
         const connection = await getDatabaseConnection(pool);
         try {
-            const sessionID = getSessionIDFromCookie(req);
+            const sessionID = getSessionIdFromCookie(req);
             logger.info({
                 event_type: 'passport_session_lookup',
                 session_id: sessionID,

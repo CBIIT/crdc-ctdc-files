@@ -110,7 +110,7 @@ function logNihCadrFields(eventType, { req, userInfo, idp, statusCode = 200 } = 
     log('NIH, Login.gov, RAS or other providers', `${idp ?? NA} ${safeUserInfo.source ?? NA}`);
     log('Unique session identifier', safeReq.sessionID ?? NA);
     log('The requested URL', safeReq.originalUrl ?? NA);
-    log('The application or service accessed', 'ctdc-auth-service');
+    log('The application or service accessed', 'ctdc-file-service');
     log('Browser or client application making the request', headers['user-agent'] ?? NA);
     log('Outcome of the action (e.g., HTTP status code)', String(statusCode));
     log('Content type of the HTTP response', headers['content-type'] ?? NA);

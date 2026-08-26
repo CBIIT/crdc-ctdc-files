@@ -4,6 +4,7 @@ const config = require('../config');
 const getURL = require('../connectors');
 const getURLFromSource = require('../connectors/connectorsFromSource.js');
 const logger = require('../logger');
+const {getSessionIdFromCookie, getUserInfoFromDatabase} = require('../utils/session-user-info');
 const {DownloadEvent} = require('../bento-event-logging/model/download-event');
 
 
@@ -103,6 +104,9 @@ router.get('/:source/:fileId', async function(req, res, next) {
 
 
 async function getFile(fileId, req, res, next, source) {
+
+    
+  const userInfo = await getUserInfoFromDatabase(req);
   logger.info({
     event_type: 'file_lookup_start',
     file_id: fileId,
@@ -129,14 +133,13 @@ async function getFile(fileId, req, res, next, source) {
     });
 
     const duration = Date.now() - startTime;
-    const userInfo = (req.session && req.session.userInfo) || {};
     const userName = [userInfo.firstName, userInfo.lastName].filter(Boolean).join(' ') || undefined;
     const srcIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
     logger.logNihCadrFields('Download', {
       req,
-      userInfo: userInfo.userInfo,
-      idp: userInfo.userInfo.IDP,
+      userInfo: userInfo,
+      idp: userInfo?.IDP,
       statusCode: response.status,
     });
 
@@ -153,18 +156,16 @@ async function getFile(fileId, req, res, next, source) {
       duration_ms: Date.now() - startTime,
     });
     const duration = Date.now() - startTime;
-    const userInfo = (req.session && req.session.userInfo) || {};
     let status = 400;
     if (e.statusCode) {
       status = e.statusCode;
     }
-    console.log(req.session);
     logger.error({
       event_type:  'download_error',
       file_id:     fileId,
       url:         req.originalUrl,
       src_ip:      req.headers['x-forwarded-for'] || req.socket.remoteAddress,
-      session_id:  req.session && req.session.id,
+      session_id:  getSessionIdFromCookie(req),
       user_id:     userInfo.userID,
       user_email:  userInfo.email,
       duration:    duration,
