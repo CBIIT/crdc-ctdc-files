@@ -158,6 +158,7 @@ async function getFile(fileId, req, res, next, source) {
     if (e.statusCode) {
       status = e.statusCode;
     }
+    console.log(req.session);
     logger.error({
       event_type:  'download_error',
       file_id:     fileId,
