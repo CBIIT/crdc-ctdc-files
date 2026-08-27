@@ -12,7 +12,7 @@ module.exports = function (exceptions) {
         if (exceptions && exceptions.includes(req.path)) return next();
 
         const srcIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-        const sessionId = req.session && req.session.id;
+        const sessionId = req.sessionID || null;
         const userInfo = (req.session && req.session.userInfo) || null;
 
         try {
