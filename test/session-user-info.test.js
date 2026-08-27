@@ -52,7 +52,7 @@ describe('session user info utilities', () => {
 
     expect(result).toEqual(userInfo);
     expect(mockPool.query).toHaveBeenCalledWith(
-      'SELECT data FROM ctdc.sessions WHERE session_id = ?',
+      'SELECT data FROM sessions WHERE session_id = ?',
       ['session-123'],
       expect.any(Function)
     );
