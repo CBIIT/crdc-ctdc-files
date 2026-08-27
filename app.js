@@ -18,7 +18,7 @@ const accessLogStream = fs.createWriteStream(path.join(__dirname, LOG_FOLDER, 'a
 
 // Custom morgan tokens for NIH CADR fields
 morgan.token('_time',             ()     => new Date().toISOString());
-morgan.token('session_id',        (req)  => (req.session && req.session.id) || '-');
+morgan.token('session_id',        (req)  => req.sessionID || '-');
 morgan.token('user_id',           (req)  => (req.session && req.session.userInfo && req.session.userInfo.userID) || '-');
 morgan.token('user_email',        (req)  => (req.session && req.session.userInfo && req.session.userInfo.email) || '-');
 morgan.token('user_name',         (req)  => {
