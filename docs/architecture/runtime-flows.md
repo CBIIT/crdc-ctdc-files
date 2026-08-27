@@ -10,8 +10,7 @@ This file is an index of the major runtime flow categories observed in the repos
 - Event logging — Observed: `bento-event-logging/` and associated models.
 - Neo4j interactions — Observed: `neo4j/neo4j-operations.js` files.
 - External storage / indexing integrations — Observed: `connectors/indexdConnector.js`, `S3Connector.js`, `publicS3Connector.js`, `cloudFrontConnector.js`.
- - External storage / indexing integrations — Observed: `connectors/indexdConnector.js`, `S3Connector.js`, `publicS3Connector.js`, `cloudFrontConnector.js`.
- - DCF access flow (GA4GH DRS) — Observed: `connectors/rasDcfConnector.js` implements passport validation and DCF `/access` calls to obtain signed URLs.
+- DCF access flow (GA4GH DRS) — Observed: `connectors/rasDcfConnector.js` implements passport validation and DCF `/access` calls to obtain signed URLs.
 
 ## Top-level flow diagram
 
