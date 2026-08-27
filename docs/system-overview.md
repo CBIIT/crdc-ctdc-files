@@ -37,5 +37,5 @@ Notes:
 - Items marked above are directly observed from repository files and paths. Diagrams are conservative and avoid assuming background workers or extra processes that are not present in code.
 
 ## Where to look next
-- See [docs/architecture/components.md](docs/architecture/components.md) for component details.
-- See [docs/architecture/runtime-flows.md](docs/architecture/runtime-flows.md) for flow categories and diagrams.
+- See [architecture/components.md](architecture/components.md) for component details.
+- See [architecture/runtime-flows.md](architecture/runtime-flows.md) for flow categories and diagrams.
