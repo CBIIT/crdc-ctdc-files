@@ -106,7 +106,7 @@ function logNihCadrFields(eventType, { req, userInfo, idp, statusCode = 200 } = 
     log('Source IP address of the connection', safeReq.ip ?? NA);
     log('Destination IP address of the connection', NA);
     log('Destination port of the connection', NA);
-    log('Identifies the users first name and last name associated with the event', `${safeUserInfo.first_name ?? NA} ${safeUserInfo.last_name ?? NA}`);
+    log('Identifies the users first name and last name associated with the event', `${safeUserInfo.firstName ?? safeUserInfo.first_name ?? NA} ${safeUserInfo.lastName ?? safeUserInfo.last_name ?? NA}`);
     log('NIH, Login.gov, RAS or other providers', `${idp ?? NA} ${safeUserInfo.source ?? NA}`);
     log('Unique session identifier', safeReq.sessionID ?? NA);
     log('The requested URL', safeReq.originalUrl ?? NA);
