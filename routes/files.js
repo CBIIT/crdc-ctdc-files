@@ -54,14 +54,22 @@ router.get('/config', function(req, res, next) {
 
 /* Endpoint to accept GUID with the following format: /dg.4DFC/{rest_of_id} */
 router.get('/:prefix/:fileId', async function(req, res, next) {
+  const maybeSource = String(req.params.prefix || '').trim().toUpperCase();
+  const isSourceRequest = Array.isArray(getURLFromSource.supportedSources)
+    && getURLFromSource.supportedSources.includes(maybeSource);
+
+  const source = isSourceRequest ? req.params.prefix : undefined;
+  const fileId = isSourceRequest ? req.params.fileId : `${req.params.prefix}/${req.params.fileId}`;
+
   logger.info({
     event_type: 'files_request',
     method: req.method,
     path: req.originalUrl || req.url,
+    source,
     prefix: req.params.prefix,
     file_id: req.params.fileId,
   });
-  await getFile(req.params.prefix+"/"+req.params.fileId, req, res, next);
+  await getFile(fileId, req, res, next, source);
 });
 
 /* GET file's location based on fileId. */
