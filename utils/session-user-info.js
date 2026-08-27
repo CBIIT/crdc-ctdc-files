@@ -14,18 +14,15 @@ const sessionConnection = mysql.createPool({
 async function getUserInfoFromDatabase(req) {
   const sessionId = getSessionIdFromCookie(req);
   if (!sessionId) return {};
-  console.log(`Session ID: ${sessionId}`);
   try {
     const rows = await queryDatabase(
       sessionConnection,
-      'SELECT data FROM ctdc.sessions WHERE session_id = ?',
+      'SELECT data FROM sessions WHERE session_id = ?',
       [sessionId]
     );
     if (!rows || !rows[0] || !rows[0].data) return {};
     const sessionData = JSON.parse(rows[0].data);
-    console.log("sessionData:", sessionData);
     return sessionData.userInfo || {};
-    
   } catch (error) {
     console.error(`Error fetching user info from database: ${error}`);
     return {};
