@@ -272,7 +272,10 @@ module.exports = async (file_id, req) => {
             file_id,
             status: result && result.status,
         });
-        return result;
+        return {
+            status: result && result.status,
+            message: result && result.message
+        };
     }
 };
 
