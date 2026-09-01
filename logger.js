@@ -1,5 +1,4 @@
 const winston = require('winston');
-const { isCaseInsensitiveEqual } = require('./utils/string-util');
 
 const APP_NAME = process.env.APP_NAME || 'CTDC-Files';
 const CADR_NAME = process.env.CADR_NAME || 'CTDC(Clinical and Translational Data Commons)';
@@ -89,8 +88,6 @@ const NA = 'N/A';
  * @param {number|string} [options.statusCode] - HTTP status code to report as the outcome
  */
 function logNihCadrFields(eventType, { req, userInfo, idp, statusCode = 200 } = {}) {
-    // NIH CADR field-by-field logging only applies to the RAS identity provider
-    // if (!isCaseInsensitiveEqual(idp, "RAS")) return;
 
     const safeReq = req || {};
     const safeUserInfo = userInfo || {};

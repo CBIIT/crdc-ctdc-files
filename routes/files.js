@@ -108,12 +108,7 @@ async function getFile(fileId, req, res, next, source) {
     path: req.originalUrl || req.url,
     method: req.method,
   });
- logger.logNihCadrFields('Start Download', {
-      req,
-      userInfo: userInfo,
-      idp: userInfo?.IDP,
-      statusCode: response.status,
-    });
+
   
   const startTime = Date.now();
   try {
@@ -131,6 +126,13 @@ async function getFile(fileId, req, res, next, source) {
       path: req.originalUrl || req.url,
     });
 
+     logger.logNihCadrFields('Start Download', {
+      req,
+      userInfo: userInfo,
+      idp: userInfo?.IDP,
+      statusCode: response.status,
+    });
+    
     //await storeDownloadEvent(req.session?.userInfo, fileId);
     res.status(response.status).send(response.message);
   } catch (e) {
