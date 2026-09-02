@@ -12,25 +12,11 @@ const {DownloadEvent} = require('../bento-event-logging/model/download-event');
 
 /* GET ping-ping for health checking. */
 router.get('/ping', function(req, res, next) {
-  logger.info({
-    event_type: 'files_ping',
-    path: req.originalUrl || req.url,
-    method: req.method,
-    source: config.source,
-    project: config.project,
-  });
   res.send(`pong`);
 });
 
 /* GET version for health checking and version checking. */
 router.get('/version', function(req, res, next) {
-  logger.info({
-    event_type: 'files_version',
-    path: req.originalUrl || req.url,
-    method: req.method,
-    version: config.version,
-    date: config.date,
-  });
   res.json({
     version: config.version,
     date: config.date
@@ -140,29 +126,17 @@ async function getFile(fileId, req, res, next, source) {
       path: req.originalUrl || req.url,
     });
 
-    const duration = Date.now() - startTime;
-    const userName = [userInfo.firstName, userInfo.lastName].filter(Boolean).join(' ') || undefined;
-    const srcIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
-    logger.logNihCadrFields('Download', {
+     logger.logNihCadrFields('Start Download', {
       req,
-      userInfo: userInfo,
+      userInfo: userInfo.userInfo,
       idp: userInfo?.IDP,
       statusCode: response.status,
     });
-
+    
     //await storeDownloadEvent(req.session?.userInfo, fileId);
     res.status(response.status).send(response.message);
   } catch (e) {
-    logger.error({
-      event_type: 'file_lookup_error',
-      file_id: fileId,
-      source,
-      path: req.originalUrl || req.url,
-      method: req.method,
-      message: e && e.message ? e.message : String(e),
-      duration_ms: Date.now() - startTime,
-    });
     const duration = Date.now() - startTime;
     let status = 400;
     if (e.statusCode) {
@@ -181,8 +155,8 @@ async function getFile(fileId, req, res, next, source) {
     });
     logger.logNihCadrFields('Download', {
       req,
-      userInfo,
-      idp: userInfo.IDP,
+      userInfo: userInfo.userInfo,
+      idp: userInfo?.IDP,
       statusCode: status,
     });
     let message = `Error retrieving data for ${fileId}`;

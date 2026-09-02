@@ -41,7 +41,7 @@ function queryDatabase(connection, query, values = []) {
         console.log("Query execution error:", error);
         reject(error);
       } else {
-         console.log("Query executed successfully, results:", results);
+         console.log("Query executed successfully");
         resolve(results);
       }
     });

@@ -42,7 +42,7 @@ const getPassportFromDatabase = async (req, pool) => {
             });
             if (!sessionID || sessionID==null) throw new Error("No session ID found");
             const rows = await queryDatabase(connection, "SELECT * FROM sessions WHERE session_id = ?", [sessionID]);
-             console.log(`Session data retrieved: ${JSON.stringify(rows)}`);
+             console.log(`Session data retrieved:`);
             if (!rows || !rows[0] || !rows[0].data) throw new Error("Session expires or not found");
             const parsedData = JSON.parse(rows[0].data);
             const passport = parsedData?.userInfo?.userInfo?.passport_jwt_v11
