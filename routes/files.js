@@ -126,6 +126,8 @@ async function getFile(fileId, req, res, next, source) {
       path: req.originalUrl || req.url,
     });
 
+    console.log(`File lookup successful for fileId: ${userInfo}`);
+
      logger.logNihCadrFields('Start Download', {
       req,
       userInfo: userInfo,
