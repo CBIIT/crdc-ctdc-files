@@ -126,11 +126,10 @@ async function getFile(fileId, req, res, next, source) {
       path: req.originalUrl || req.url,
     });
 
-    console.log(`File lookup successful for fileId: ${userInfo}`);
 
      logger.logNihCadrFields('Start Download', {
       req,
-      userInfo: userInfo,
+      userInfo: userInfo.userInfo,
       idp: userInfo?.IDP,
       statusCode: response.status,
     });
@@ -156,8 +155,8 @@ async function getFile(fileId, req, res, next, source) {
     });
     logger.logNihCadrFields('Download', {
       req,
-      userInfo,
-      idp: userInfo.IDP,
+      userInfo: userInfo.userInfo,
+      idp: userInfo?.IDP,
       statusCode: status,
     });
     let message = `Error retrieving data for ${fileId}`;
