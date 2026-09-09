@@ -68,6 +68,30 @@ router.get('/:fileId', async function(req, res, next) {
   await getFile(req.params.fileId, req, res, next);
 });
 
+/* Endpoint to accept GUID with the following format: /ras/phsid1000/dg.4DFC/uudi} */
+router.get('/:idp/:prefix/:fileId', async function(req, res, next) {
+  logger.info({
+    event_type: 'files_request',
+    method: req.method,
+    path: req.originalUrl || req.url,
+    idp: req.params.idp,
+    prefix: req.params.prefix,
+    file_id: req.params.fileId,
+  });
+  await getFile(req.params.prefix+"/"+req.params.fileId, req, res, next);
+});
+
+/* GET file's location based on fileId. /ras/phsid1000/uuid */ 
+router.get('/:idp/:fileId', async function(req, res, next) {
+  logger.info({
+    event_type: 'files_request',
+    method: req.method,
+    path: req.originalUrl || req.url,
+    idp: req.params.idp,
+    file_id: req.params.fileId,
+  });
+  await getFile(req.params.fileId, req, res, next);
+});
 
 /* Endpoint to accept GUID with the following format: /ras/phsid1000/dg.4DFC/uudi} */
 router.get('/:idp/:phs/:prefix/:fileId', async function(req, res, next) {
@@ -101,7 +125,7 @@ async function getFile(fileId, req, res, next) {
   const userInfo = await getUserInfoFromDatabase(req);
   const session_id = getSessionIdFromCookie(req);
   const idp= req.params.idp;
-  const phs = req.params.phs; 
+  const phs = req.params.phs ? req.params.phs : 'N/A';
 
   logger.info({
     event_type: 'file_lookup_start',

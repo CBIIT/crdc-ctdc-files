@@ -77,8 +77,6 @@ const RAS_FIELD_EMPTY = 'Got an empty value from RAS.';
 
 
 function getRasField(info, field) {
-    console.log(`Getting RAS field: ${field}`);
-    console.log(`Getting RAS field: ${JSON.stringify(info)}`);
     if (!Object.prototype.hasOwnProperty.call(info, field)) {
         return RAS_FIELD_MISSING;
     }
@@ -104,7 +102,6 @@ function getTxnFromAccessToken(accessToken) {
             return { txn: NA, status: 'invalid' };
         }
         const claims = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
-        console.log(`Decoded JWT claims: ${JSON.stringify(claims)}`);
         if (claims.txn == null) return { txn: NA, status: 'missing_txn' };
         return { txn: claims.txn, status: 'decoded' };
     } catch (error) {
