@@ -22,7 +22,7 @@ async function getUserInfoFromDatabase(req) {
     );
     if (!rows || !rows[0] || !rows[0].data) return {};
     const sessionData = JSON.parse(rows[0].data);
-    return sessionData.userInfo || {};
+    return sessionData || {};
   } catch (error) {
     console.error(`Error fetching user info from database: ${error}`);
     return {};
