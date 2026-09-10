@@ -102,7 +102,8 @@ function getTxnFromAccessToken(accessToken) {
             return { txn: NA, status: 'invalid' };
         }
         const claims = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
-        if (claims.txn == null) return { txn: NA, status: 'missing_txn' };
+        if (!claims || Object.keys(claims).length === 0) return { txn: RAS_FIELD_MISSING, status: 'invalid' };
+        if (claims.txn == null || claims.txn === '') return { txn: RAS_FIELD_EMPTY, status: 'missing_txn' };
         return { txn: claims.txn, status: 'decoded' };
     } catch (error) {
         return { txn: NA, status: 'invalid' };
