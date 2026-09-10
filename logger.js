@@ -148,7 +148,7 @@ function logNihCadrFields(eventType, {
         dest_ip: requestContext.dest_ip ?? NA,
         dest_port: requestContext.dest_port ?? NA,
         user_name: `${getRasFieldFromAliases(safeUserInfo, ['firstName', 'first_name'])} ${getRasFieldFromAliases(safeUserInfo, ['lastName', 'last_name'])}`,
-        user_id_provider: `${idp ?? NA}`,
+        user_id_provider: getRasField(safeUserInfo, 'source'),
         session_id: session_id ?? NA,
         url: requestContext.url ?? NA,
         http_user_agent: headers['user-agent'] ?? NA,

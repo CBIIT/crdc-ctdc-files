@@ -1,6 +1,7 @@
 const mysql = require('mysql2');
 const config = require('../config');
 const {getSessionIdFromCookie, queryDatabase} = require('./session-database');
+const logger = require('../logger');
 
 const sessionConnection = mysql.createPool({
   host: config.mysql_host,
@@ -24,7 +25,7 @@ async function getUserInfoFromDatabase(req) {
     const sessionData = JSON.parse(rows[0].data);
     return sessionData || {};
   } catch (error) {
-    console.error(`Error fetching user info from database: ${error}`);
+    logger.error({ event_type: 'session_user_info_lookup_error', message: error.message || String(error) });
     return {};
   }
 }
