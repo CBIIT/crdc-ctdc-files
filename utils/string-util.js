@@ -1,3 +1,5 @@
+const logger = require('../logger');
+
 const isCaseInsensitiveEqual = (source, target) => {
     if (!target || !source) return false;
     return source.toLowerCase() === target.toLowerCase();
@@ -9,7 +11,7 @@ const strToArr = (str) => {
         arr = JSON.parse(arr);
         return Array.isArray(arr) ? arr : [];
     } catch (e) {
-        console.error("invalid string array detected")
+        logger.error({ event_type: 'invalid_string_array' });
     }
     return [];
 }

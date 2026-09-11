@@ -5,7 +5,6 @@ const getURL = require('../connectors');
 const getURLFromSource = require('../connectors/connectorsFromSource.js');
 const logger = require('../logger');
 const {getSessionIdFromCookie, getUserInfoFromDatabase} = require('../utils/session-user-info');
-const {DownloadEvent} = require('../bento-event-logging/model/download-event');
 
 
 //const {storeDownloadEvent} = require("../neo4j/neo4j-operations");
@@ -69,100 +68,132 @@ router.get('/:fileId', async function(req, res, next) {
   await getFile(req.params.fileId, req, res, next);
 });
 
-
-
-/* Endpoint to accept GUID with the following format: /dg.4DFC/{rest_of_id} */
-router.get('/:source/:prefix/:fileId', async function(req, res, next) {
+/* Endpoint to accept GUID with the following format: /ras/phsid1000/dg.4DFC/uudi} */
+router.get('/:idp/:prefix/:fileId', async function(req, res, next) {
   logger.info({
     event_type: 'files_request',
     method: req.method,
     path: req.originalUrl || req.url,
-    source: req.params.source,
+    idp: req.params.idp,
     prefix: req.params.prefix,
     file_id: req.params.fileId,
   });
-  await getFile(req.params.prefix+"/"+req.params.fileId, req, res, next, req.params.source);
+  await getFile(req.params.prefix+"/"+req.params.fileId, req, res, next);
 });
 
-/* GET file's location based on fileId. */
-router.get('/:source/:fileId', async function(req, res, next) {
+/* GET file's location based on fileId. /ras/phsid1000/uuid */ 
+router.get('/:idp/:fileId', async function(req, res, next) {
   logger.info({
     event_type: 'files_request',
     method: req.method,
     path: req.originalUrl || req.url,
-    source: req.params.source,
+    idp: req.params.idp,
     file_id: req.params.fileId,
   });
-  await getFile(req.params.fileId, req, res, next, req.params.source);
+  await getFile(req.params.fileId, req, res, next);
+});
+
+/* Endpoint to accept GUID with the following format: /ras/phsid1000/dg.4DFC/uudi} */
+router.get('/:idp/:phs/:prefix/:fileId', async function(req, res, next) {
+  logger.info({
+    event_type: 'files_request',
+    method: req.method,
+    path: req.originalUrl || req.url,
+    idp: req.params.idp,
+    phs: req.params.phs,
+    prefix: req.params.prefix,
+    file_id: req.params.fileId,
+  });
+  await getFile(req.params.prefix+"/"+req.params.fileId, req, res, next);
+});
+
+/* GET file's location based on fileId. /ras/phsid1000/uuid */ 
+router.get('/:idp/:phs/:fileId', async function(req, res, next) {
+  logger.info({
+    event_type: 'files_request',
+    method: req.method,
+    path: req.originalUrl || req.url,
+    idp: req.params.idp,
+    phs: req.params.phs,
+    file_id: req.params.fileId,
+  });
+  await getFile(req.params.fileId, req, res, next);
 });
 
 
-async function getFile(fileId, req, res, next, source) {
-
-    
+async function getFile(fileId, req, res, next) {
   const userInfo = await getUserInfoFromDatabase(req);
+  const session_id = getSessionIdFromCookie(req);
+  const idp= req.params.idp;
+  const phs = req.params.phs ? req.params.phs : 'N/A';
+
   logger.info({
     event_type: 'file_lookup_start',
     file_id: fileId,
-    source,
+    idp,
+    phs,
+    session_id,
     path: req.originalUrl || req.url,
     method: req.method,
   });
 
-  
   const startTime = Date.now();
   try {
-    const cookie = req.headers.cookie;
-    let response = source
-      ? await getURLFromSource(fileId, req, res, source)
+    const response = idp
+      ? await getURLFromSource(fileId, req, res, idp)
       : await getURL(fileId, req, res);
+    const duration = Date.now() - startTime;
 
     logger.info({
       event_type: 'file_lookup_success',
       file_id: fileId,
-      source,
-      status: response && response.status,
-      duration_ms: Date.now() - startTime,
+      source: idp,
+      status: response?.status,
+      duration_ms: duration,
       path: req.originalUrl || req.url,
     });
 
-
-     logger.logNihCadrFields('Start Download', {
+    logger.logNihCadrFields('file_download', {
       req,
-      userInfo: userInfo.userInfo,
-      idp: userInfo?.IDP,
+      userInfo,
+      idp: userInfo.IDP || idp,
       statusCode: response.status,
+      associated_study: phs,
+      duration,
+      data_accessed: fileId,
+      session_id,
+      access_token: userInfo?.userInfo?.tokens?.access_token || '',
     });
-    
-    //await storeDownloadEvent(req.session?.userInfo, fileId);
+
     res.status(response.status).send(response.message);
   } catch (e) {
     const duration = Date.now() - startTime;
-    let status = 400;
-    if (e.statusCode) {
-      status = e.statusCode;
-    }
+    const status = e.statusCode || 400;
+
     logger.error({
-      event_type:  'download_error',
-      file_id:     fileId,
-      url:         req.originalUrl,
-      src_ip:      req.headers['x-forwarded-for'] || req.socket.remoteAddress,
-      session_id:  getSessionIdFromCookie(req),
-      user_id:     userInfo.userID,
-      user_email:  userInfo.email,
-      duration:    duration,
-      message:     e.message || String(e),
+      event_type: 'download_error',
+      file_id: fileId,
+      url: req.originalUrl,
+      src_ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+      session_id,
+      user_id: userInfo.userID || userInfo.sub,
+      user_email: userInfo.email,
+      duration,
+      message: e.message || String(e),
     });
-    logger.logNihCadrFields('Download', {
+
+    logger.logNihCadrFields('file_download', {
       req,
-      userInfo: userInfo.userInfo,
-      idp: userInfo?.IDP,
+      userInfo,
+      idp: userInfo.IDP || idp,
       statusCode: status,
+      associated_study: phs,
+      duration: duration,
+      data_accessed: fileId,
+      session_id,
+      access_token: userInfo?.userInfo?.tokens?.access_token || '',
     });
-    let message = `Error retrieving data for ${fileId}`;
-    if (e.message) {
-      message = e.message;
-    }
+    const message = e.message || `Error retrieving data for ${fileId}`;
     res.status(status).send(message);
   }
 }

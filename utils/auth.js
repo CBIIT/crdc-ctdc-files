@@ -57,7 +57,6 @@ module.exports = function (exceptions) {
             });
             return res.status(401).send('Not authenticated!');
         } catch (e) {
-            console.log(e);
             logger.error({
                 event_type: 'auth_error',
                 url:        req.originalUrl,

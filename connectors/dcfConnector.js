@@ -1,6 +1,7 @@
 const nodeFetch = require('node-fetch');
 const mysql = require('mysql2');
 const config = require('../config.js');
+const logger = require('../logger');
 
 
 // Setting up a MySQL connection pool from the provided configurations.
@@ -34,14 +35,12 @@ const parseCookies = (cookieHeader) => {
  * @returns {String|null} The extracted session ID or null if not available.
  */
 const getSessionIDFromCookie = (req) => {
-    console.log("getSessionIDFromCookie");
+    logger.info({ event_type: 'session_cookie_lookup' });
     const cookies = parseCookies(req.headers.cookie);
      
-    console.log(cookies["connect.sid"]);
     if (!cookies["connect.sid"]) {
         return null;
     }
-    console.log(cookies["connect.sid"].match('.*[.]')[0].slice(4, -1));
     return cookies["connect.sid"].match('.*[.]')[0].slice(4, -1);
 };
 
@@ -87,12 +86,11 @@ const queryDatabase = (connection, query, values = []) => new Promise((resolve, 
  * @returns {String} A promise resolving with the DCF token or -1 in case of failure.
  */
 const getDCFTokenFromDatabase = async (req, pool) => {
-    console.log("getDCFTokenFromDatabase");
+    logger.info({ event_type: 'dcf_token_lookup_start' });
     try {
         const connection = await getDatabaseConnection(pool);
         try {
             const sessionID = getSessionIDFromCookie(req); // Example sessionID, replace with actual logic
-            console.log("sessionID: ", sessionID)
             if (!sessionID || sessionID==null) throw new Error("No session ID found");
             const rows = await queryDatabase(connection, "SELECT * FROM ctdc.sessions WHERE session_id = ?", [sessionID]);
             if (!rows || !rows[0] || !rows[0].data) throw new Error("Session expires or not found");
@@ -103,7 +101,7 @@ const getDCFTokenFromDatabase = async (req, pool) => {
             connection.release();
         }
     } catch (error) {
-        console.error("Error in getDCFTokenFromDatabase:", error.message);
+        logger.error({ event_type: 'dcf_token_lookup_error', message: error.message });
         return "NA";
     }
 };
@@ -118,34 +116,34 @@ const getDCFTokenFromDatabase = async (req, pool) => {
  */
 const fetchDCFFile = async (file_id, accessToken) => {
     const url = `${config.DCF_File_URL}/${file_id}`;
-    console.log(`Fetching DCF file from URL: ${url}`);
-    console.log(`token :  ${accessToken}`)
+    logger.info({ event_type: 'dcf_file_fetch_start', file_id, url });
     try {
         const response = await nodeFetch(url, {
             method: 'GET',
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
         if (!response.ok) {
-            console.error('auth fails')
-            console.error(response.status);
-            console.error(response.statusText);
+            logger.error({
+                event_type: 'dcf_file_fetch_unauthorized',
+                status: response.status,
+                message: response.statusText,
+            });
             return {
                 status: response.status,
                 message: `File not found: ${response.status} (${response.statusText})`
             };
             // throw new Error(`HTTP error! status: ${response.status}`);
         }
-        console.log("DCF file fetched successfully");
+        logger.info({ event_type: 'dcf_file_fetch_success', file_id });
 
         const signed_url= await response.json();
 
-        console.log("signed_url: ", signed_url);
         return {
             status: 200,
             message: signed_url
         };
     } catch (error) {
-        console.error("Failed to fetch DCF file:", error.message);
+        logger.error({ event_type: 'dcf_file_fetch_error', file_id, message: error.message });
         return {
             status: 500,
             message: "Failed to fetch DCF file:"+ error.message
@@ -161,13 +159,12 @@ const fetchDCFFile = async (file_id, accessToken) => {
  * @param {Object} req - The request object, used to retrieve the session ID and DCF token.
  */
 module.exports = async (file_id, req) => {
-    console.log("This is DCF Connector ");
+    logger.info({ event_type: 'dcf_connector_start', file_id });
     const connectionPool = connection;
-    console.log("MYSQL Connection Completed ");
+    logger.info({ event_type: 'dcf_database_pool_ready' });
 
     const token = await getDCFTokenFromDatabase(req, connectionPool);
 
-    console.log("Access Token: ", token);
     if (token == "NA") {
          return {
             status: 500,

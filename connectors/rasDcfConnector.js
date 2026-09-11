@@ -42,7 +42,7 @@ const getPassportFromDatabase = async (req, pool) => {
             });
             if (!sessionID || sessionID==null) throw new Error("No session ID found");
             const rows = await queryDatabase(connection, "SELECT * FROM sessions WHERE session_id = ?", [sessionID]);
-             console.log(`Session data retrieved:`);
+            logger.info({ event_type: 'passport_session_data_retrieved' });
             if (!rows || !rows[0] || !rows[0].data) throw new Error("Session expires or not found");
             const parsedData = JSON.parse(rows[0].data);
             const passport = parsedData?.userInfo?.userInfo?.passport_jwt_v11
@@ -133,7 +133,7 @@ const fetchDCFFile = async (file_id, passport) => {
     try {
         let accessId = "s3";
         const accessUrl = `${config.DCF_FILE_URL_RAS}/${file_id}/access/${accessId}`;
-        console.log('Attempting POST to access with access_id:', accessUrl);
+        logger.info({ event_type: 'dcf_access_request_start', url: accessUrl });
         const result = await tryPostAccess(accessUrl);
         if (result.ok) {
             const respBody = result.body;

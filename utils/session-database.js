@@ -1,3 +1,5 @@
+const logger = require('../logger');
+
 function parseCookies(cookieHeader) {
   const list = {};
   cookieHeader && cookieHeader.split(';').forEach((cookie) => {
@@ -17,7 +19,7 @@ function getSessionIdFromCookie(req) {
   if (!sessionCookie) return null;
 
   const match = sessionCookie.match(/^s:([^.]*)\./);
-  console.log(match ? match[1] : null);
+  logger.info({ event_type: 'session_cookie_parsed', has_session_id: Boolean(match) });
   return match ? match[1] : null;
 }
 
@@ -34,14 +36,14 @@ function getDatabaseConnection(pool) {
 }
 
 function queryDatabase(connection, query, values = []) {
-  console.log("Executing query:", query, "with values:", values);
+  logger.info({ event_type: 'database_query_start' });
   return new Promise((resolve, reject) => {
     connection.query(query, values, (error, results) => {
       if (error) {
-        console.log("Query execution error:", error);
+        logger.error({ event_type: 'database_query_error', message: error.message });
         reject(error);
       } else {
-         console.log("Query executed successfully");
+        logger.info({ event_type: 'database_query_success' });
         resolve(results);
       }
     });
