@@ -158,7 +158,7 @@ function logNihCadrFields(eventType, {
         bytes: headers['content-length'] ?? NA,
         duration: duration ?? NA,
         user_country_name: NA,
-        user_org: NA,
+        user_org: RAS_FIELD_MISSING,
         user_email: getRasField(safeUserInfo, 'email'),
         associated_study: associated_study ?? NA,
         eRA_commons_id: getRasField(
