@@ -167,7 +167,7 @@ function logNihCadrFields(eventType, {
         ),
         user_permission_group: 'dbGaP',
         data_accessed: data_accessed ?? NA,
-        data_repository_accessed: NA,
+        data_repository_accessed: 'dcf',
     });
 }
 
