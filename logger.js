@@ -50,7 +50,7 @@ function extractRequestContext(req) {
         if (req.headers['user-agent']) context.http_user_agent = req.headers['user-agent'];
         if (req.headers['content-type']) context.http_content_type = req.headers['content-type'];
     }
-    if (req.hostname) context.dest_ip = `${req.protocol}://${host}`;
+    if (req.hostname) context.dest_ip = req.hostname;
     return context;
 }
 

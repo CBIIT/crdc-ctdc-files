@@ -23,7 +23,7 @@ async function getUserInfoFromDatabase(req) {
     );
     if (!rows || !rows[0] || !rows[0].data) return {};
     const sessionData = JSON.parse(rows[0].data);
-    return sessionData || {};
+    return sessionData.userInfo || {};
   } catch (error) {
     logger.error({ event_type: 'session_user_info_lookup_error', message: error.message || String(error) });
     return {};
