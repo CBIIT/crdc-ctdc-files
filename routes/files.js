@@ -40,6 +40,20 @@ function getSignedUrlPayload(message) {
   return null;
 }
 
+function normalizeConnectorResponse(response) {
+  if (response && typeof response === 'object' && ('status' in response || 'message' in response)) {
+    return {
+      status: typeof response.status === 'number' ? response.status : 200,
+      message: response.message,
+    };
+  }
+
+  return {
+    status: 200,
+    message: response,
+  };
+}
+
 /* GET ping-ping for health checking. */
 router.get('/ping', function(req, res, next) {
   res.send(`pong`);
@@ -185,9 +199,10 @@ async function getFile(fileId, req, res, next) {
 
   const startTime = Date.now();
   try {
-    const response = idp
+    const connectorResponse = idp
       ? await getURLFromSource(fileId, req, res, idp)
       : await getURL(fileId, req, res);
+    const response = normalizeConnectorResponse(connectorResponse);
     const duration = Date.now() - startTime;
 
     logger.info({

@@ -133,6 +133,15 @@ describe('files route matching', () => {
     });
   });
 
+  it('normalizes a raw connector URL string as a JSON url payload', async () => {
+    getURL.mockResolvedValueOnce('https://signed-url.example/raw-file');
+
+    await expect(dispatch('/file-uuid')).resolves.toMatchObject({
+      status: 200,
+      body: { url: 'https://signed-url.example/raw-file' },
+    });
+  });
+
   it('normalizes a connector url object as a JSON url payload', async () => {
     getURLFromSource.mockResolvedValueOnce({
       status: 200,
