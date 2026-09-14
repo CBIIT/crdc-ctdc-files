@@ -21,6 +21,20 @@ source from `connectors/connectorsFromSource.js`, for example `ras`.
 | `/api/files/ras/{phs}/{uuid}` | RAS connector | `{uuid}` | RAS lookup with study accession for logging. |
 | `/api/files/ras/{phs}/dg.4DFC/{uuid}` | RAS connector | `dg.4DFC/{uuid}` | Preferred RAS GUID lookup. |
 
+## Response Shape
+
+Successful signed URL lookups return JSON:
+
+```json
+{
+  "url": "https://signed-url.example/file"
+}
+```
+
+The route handler normalizes connector responses when the connector returns a
+raw signed URL string or an object with `url`, `presigned_url`, or `fileURL`.
+Error responses keep the connector status and message.
+
 ## Preferred CTDC Frontend Usage
 
 For non-RAS/default downloads, use the file identifier as provided by GraphQL:

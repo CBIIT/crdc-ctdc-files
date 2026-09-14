@@ -25,6 +25,21 @@ function buildPrefixedFileId(prefix, fileId) {
   return `${prefix}/${fileId}`;
 }
 
+function getSignedUrlPayload(message) {
+  if (typeof message === 'string' && /^https?:\/\//i.test(message.trim())) {
+    return { url: message.trim() };
+  }
+
+  if (message && typeof message === 'object') {
+    const url = message.url || message.presigned_url || message.fileURL;
+    if (typeof url === 'string' && /^https?:\/\//i.test(url.trim())) {
+      return { url: url.trim() };
+    }
+  }
+
+  return null;
+}
+
 /* GET ping-ping for health checking. */
 router.get('/ping', function(req, res, next) {
   res.send(`pong`);
@@ -196,7 +211,14 @@ async function getFile(fileId, req, res, next) {
       access_token: userInfo?.userInfo?.tokens?.access_token || '',
     });
 
-    res.status(response.status).send(response.message);
+    const signedUrlPayload = response.status === 200
+      ? getSignedUrlPayload(response.message)
+      : null;
+    if (signedUrlPayload) {
+      return res.status(response.status).json(signedUrlPayload);
+    }
+
+    return res.status(response.status).send(response.message);
   } catch (e) {
     const duration = Date.now() - startTime;
     const status = e.statusCode || 400;

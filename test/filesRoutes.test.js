@@ -120,4 +120,28 @@ describe('files route matching', () => {
     expect(getURLFromSource).toHaveBeenCalledWith('dg.4DFC/file-uuid', expect.any(Object), expect.any(Object), 'ras');
     expect(getURL).not.toHaveBeenCalled();
   });
+
+  it('returns a signed URL string as a JSON url payload', async () => {
+    getURL.mockResolvedValueOnce({
+      status: 200,
+      message: 'https://signed-url.example/file',
+    });
+
+    await expect(dispatch('/file-uuid')).resolves.toMatchObject({
+      status: 200,
+      body: { url: 'https://signed-url.example/file' },
+    });
+  });
+
+  it('normalizes a connector url object as a JSON url payload', async () => {
+    getURLFromSource.mockResolvedValueOnce({
+      status: 200,
+      message: { url: 'https://signed-url.example/ras-file' },
+    });
+
+    await expect(dispatch('/ras/file-uuid')).resolves.toMatchObject({
+      status: 200,
+      body: { url: 'https://signed-url.example/ras-file' },
+    });
+  });
 });
