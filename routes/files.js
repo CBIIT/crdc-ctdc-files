@@ -9,6 +9,22 @@ const {getSessionIdFromCookie, getUserInfoFromDatabase} = require('../utils/sess
 
 //const {storeDownloadEvent} = require("../neo4j/neo4j-operations");
 
+const GUID_PREFIXES = new Set(['dg.4dfc']);
+
+function isGuidPrefix(prefix) {
+  return GUID_PREFIXES.has(String(prefix || '').trim().toLowerCase());
+}
+
+function isSupportedSource(source) {
+  const sourceName = String(source || '').trim().toUpperCase();
+  return Array.isArray(getURLFromSource.supportedSources)
+    && getURLFromSource.supportedSources.includes(sourceName);
+}
+
+function buildPrefixedFileId(prefix, fileId) {
+  return `${prefix}/${fileId}`;
+}
+
 /* GET ping-ping for health checking. */
 router.get('/ping', function(req, res, next) {
   res.send(`pong`);
@@ -37,84 +53,99 @@ router.get('/config', function(req, res, next) {
   res.send(`done`);
 });
 
-/* Endpoint to accept GUID with the following format: /dg.4DFC/{rest_of_id} */
-router.get('/:prefix/:fileId', async function(req, res, next) {
-  const maybeSource = String(req.params.prefix || '').trim().toUpperCase();
-  const isSourceRequest = Array.isArray(getURLFromSource.supportedSources)
-    && getURLFromSource.supportedSources.includes(maybeSource);
-
-  const source = isSourceRequest ? req.params.prefix : undefined;
-  const fileId = isSourceRequest ? req.params.fileId : `${req.params.prefix}/${req.params.fileId}`;
+/* Endpoint to accept source + study + GUID with the following format: /ras/phs000000/dg.4DFC/uuid */
+router.get('/:idp/:phs/:prefix/:fileId', async function(req, res, next) {
+  if (!isSupportedSource(req.params.idp) || !isGuidPrefix(req.params.prefix)) {
+    return next('route');
+  }
 
   logger.info({
     event_type: 'files_request',
     method: req.method,
     path: req.originalUrl || req.url,
-    source,
+    idp: req.params.idp,
+    phs: req.params.phs,
     prefix: req.params.prefix,
     file_id: req.params.fileId,
   });
-  await getFile(fileId, req, res, next, source);
+  const fileId = buildPrefixedFileId(req.params.prefix, req.params.fileId);
+  await getFile(fileId, req, res, next);
 });
 
-/* GET file's location based on fileId. */
+/* Endpoint to accept source + GUID with the following format: /ras/dg.4DFC/uuid */
+router.get('/:idp/:prefix/:fileId', async function(req, res, next) {
+  if (!isSupportedSource(req.params.idp) || !isGuidPrefix(req.params.prefix)) {
+    return next('route');
+  }
+
+  logger.info({
+    event_type: 'files_request',
+    method: req.method,
+    path: req.originalUrl || req.url,
+    idp: req.params.idp,
+    prefix: req.params.prefix,
+    file_id: req.params.fileId,
+  });
+  const fileId = buildPrefixedFileId(req.params.prefix, req.params.fileId);
+  await getFile(fileId, req, res, next);
+});
+
+/* GET file's location based on source + study + bare fileId. /ras/phs000000/uuid */
+router.get('/:idp/:phs/:fileId', async function(req, res, next) {
+  if (!isSupportedSource(req.params.idp)) {
+    return next('route');
+  }
+
+  logger.info({
+    event_type: 'files_request',
+    method: req.method,
+    path: req.originalUrl || req.url,
+    idp: req.params.idp,
+    phs: req.params.phs,
+    file_id: req.params.fileId,
+  });
+  await getFile(req.params.fileId, req, res, next);
+});
+
+/* Endpoint to accept GUID with the following format: /dg.4DFC/uuid */
+router.get('/:prefix/:fileId', async function(req, res, next) {
+  if (!isGuidPrefix(req.params.prefix)) {
+    return next('route');
+  }
+
+  logger.info({
+    event_type: 'files_request',
+    method: req.method,
+    path: req.originalUrl || req.url,
+    prefix: req.params.prefix,
+    file_id: req.params.fileId,
+  });
+  const fileId = buildPrefixedFileId(req.params.prefix, req.params.fileId);
+  await getFile(fileId, req, res, next);
+});
+
+/* GET file's location based on source + bare fileId. /ras/uuid */
+router.get('/:idp/:fileId', async function(req, res, next) {
+  if (!isSupportedSource(req.params.idp)) {
+    return next('route');
+  }
+
+  logger.info({
+    event_type: 'files_request',
+    method: req.method,
+    path: req.originalUrl || req.url,
+    idp: req.params.idp,
+    file_id: req.params.fileId,
+  });
+  await getFile(req.params.fileId, req, res, next);
+});
+
+/* GET file's location based on bare fileId. /uuid */
 router.get('/:fileId', async function(req, res, next) {
   logger.info({
     event_type: 'files_request',
     method: req.method,
     path: req.originalUrl || req.url,
-    file_id: req.params.fileId,
-  });
-  await getFile(req.params.fileId, req, res, next);
-});
-
-/* Endpoint to accept GUID with the following format: /ras/phsid1000/dg.4DFC/uudi} */
-router.get('/:idp/:prefix/:fileId', async function(req, res, next) {
-  logger.info({
-    event_type: 'files_request',
-    method: req.method,
-    path: req.originalUrl || req.url,
-    idp: req.params.idp,
-    prefix: req.params.prefix,
-    file_id: req.params.fileId,
-  });
-  await getFile(req.params.prefix+"/"+req.params.fileId, req, res, next);
-});
-
-/* GET file's location based on fileId. /ras/phsid1000/uuid */ 
-router.get('/:idp/:fileId', async function(req, res, next) {
-  logger.info({
-    event_type: 'files_request',
-    method: req.method,
-    path: req.originalUrl || req.url,
-    idp: req.params.idp,
-    file_id: req.params.fileId,
-  });
-  await getFile(req.params.fileId, req, res, next);
-});
-
-/* Endpoint to accept GUID with the following format: /ras/phsid1000/dg.4DFC/uudi} */
-router.get('/:idp/:phs/:prefix/:fileId', async function(req, res, next) {
-  logger.info({
-    event_type: 'files_request',
-    method: req.method,
-    path: req.originalUrl || req.url,
-    idp: req.params.idp,
-    phs: req.params.phs,
-    prefix: req.params.prefix,
-    file_id: req.params.fileId,
-  });
-  await getFile(req.params.prefix+"/"+req.params.fileId, req, res, next);
-});
-
-/* GET file's location based on fileId. /ras/phsid1000/uuid */ 
-router.get('/:idp/:phs/:fileId', async function(req, res, next) {
-  logger.info({
-    event_type: 'files_request',
-    method: req.method,
-    path: req.originalUrl || req.url,
-    idp: req.params.idp,
-    phs: req.params.phs,
     file_id: req.params.fileId,
   });
   await getFile(req.params.fileId, req, res, next);
