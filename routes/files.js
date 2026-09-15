@@ -162,7 +162,7 @@ async function getFile(fileId, req, res, next) {
       duration,
       data_accessed: fileId,
       session_id,
-      access_token: userInfo?.userInfo?.tokens?.access_token || '',
+      access_token: userInfo?.tokens?.access_token || '',
     });
 
     res.status(response.status).send(response.message);
@@ -191,7 +191,7 @@ async function getFile(fileId, req, res, next) {
       duration: duration,
       data_accessed: fileId,
       session_id,
-      access_token: userInfo?.userInfo?.tokens?.access_token || '',
+      access_token: userInfo?.tokens?.access_token || '',
     });
     const message = e.message || `Error retrieving data for ${fileId}`;
     res.status(status).send(message);

@@ -134,7 +134,7 @@ function logNihCadrFields(eventType, {
     if (typeof idp !== 'string' || idp.toUpperCase() !== 'RAS') return;
 
     const safeReq = req || {};
-    const safeUserInfo = userInfo?.userInfo?.userInfo || {};
+    const safeUserInfo = userInfo?.userInfo || {};
     const txnResult = getTxnFromAccessToken(access_token || '');
     const headers = safeReq.headers || {};
     const requestContext = extractRequestContext(safeReq);
