@@ -5,9 +5,43 @@ const getURL = require('../connectors');
 const getURLFromSource = require('../connectors/connectorsFromSource.js');
 const logger = require('../logger');
 const {getSessionIdFromCookie, getUserInfoFromDatabase} = require('../utils/session-user-info');
+const {
+  getCanonicalFileIdFromRouteParams,
+  isGuidPrefix,
+  isSupportedSource,
+} = require('../utils/file-route');
 
 
 //const {storeDownloadEvent} = require("../neo4j/neo4j-operations");
+
+function getSignedUrlPayload(message) {
+  if (typeof message === 'string' && /^https?:\/\//i.test(message.trim())) {
+    return { url: message.trim() };
+  }
+
+  if (message && typeof message === 'object') {
+    const url = message.url || message.presigned_url || message.fileURL;
+    if (typeof url === 'string' && /^https?:\/\//i.test(url.trim())) {
+      return { url: url.trim() };
+    }
+  }
+
+  return null;
+}
+
+function normalizeConnectorResponse(response) {
+  if (response && typeof response === 'object' && ('status' in response || 'message' in response)) {
+    return {
+      status: typeof response.status === 'number' ? response.status : 200,
+      message: response.message,
+    };
+  }
+
+  return {
+    status: 200,
+    message: response,
+  };
+}
 
 /* GET ping-ping for health checking. */
 router.get('/ping', function(req, res, next) {
@@ -37,84 +71,99 @@ router.get('/config', function(req, res, next) {
   res.send(`done`);
 });
 
-/* Endpoint to accept GUID with the following format: /dg.4DFC/{rest_of_id} */
-router.get('/:prefix/:fileId', async function(req, res, next) {
-  const maybeSource = String(req.params.prefix || '').trim().toUpperCase();
-  const isSourceRequest = Array.isArray(getURLFromSource.supportedSources)
-    && getURLFromSource.supportedSources.includes(maybeSource);
-
-  const source = isSourceRequest ? req.params.prefix : undefined;
-  const fileId = isSourceRequest ? req.params.fileId : `${req.params.prefix}/${req.params.fileId}`;
+/* Endpoint to accept source + study + GUID with the following format: /ras/phs000000/dg.4DFC/uuid */
+router.get('/:idp/:phs/:prefix/:fileId', async function(req, res, next) {
+  if (!isSupportedSource(req.params.idp) || !isGuidPrefix(req.params.prefix)) {
+    return next('route');
+  }
 
   logger.info({
     event_type: 'files_request',
     method: req.method,
     path: req.originalUrl || req.url,
-    source,
+    idp: req.params.idp,
+    phs: req.params.phs,
     prefix: req.params.prefix,
     file_id: req.params.fileId,
   });
-  await getFile(fileId, req, res, next, source);
+  const fileId = getCanonicalFileIdFromRouteParams(req.params);
+  await getFile(fileId, req, res, next);
 });
 
-/* GET file's location based on fileId. */
+/* Endpoint to accept source + GUID with the following format: /ras/dg.4DFC/uuid */
+router.get('/:idp/:prefix/:fileId', async function(req, res, next) {
+  if (!isSupportedSource(req.params.idp) || !isGuidPrefix(req.params.prefix)) {
+    return next('route');
+  }
+
+  logger.info({
+    event_type: 'files_request',
+    method: req.method,
+    path: req.originalUrl || req.url,
+    idp: req.params.idp,
+    prefix: req.params.prefix,
+    file_id: req.params.fileId,
+  });
+  const fileId = getCanonicalFileIdFromRouteParams(req.params);
+  await getFile(fileId, req, res, next);
+});
+
+/* GET file's location based on source + study + bare fileId. /ras/phs000000/uuid */
+router.get('/:idp/:phs/:fileId', async function(req, res, next) {
+  if (!isSupportedSource(req.params.idp)) {
+    return next('route');
+  }
+
+  logger.info({
+    event_type: 'files_request',
+    method: req.method,
+    path: req.originalUrl || req.url,
+    idp: req.params.idp,
+    phs: req.params.phs,
+    file_id: req.params.fileId,
+  });
+  await getFile(req.params.fileId, req, res, next);
+});
+
+/* Endpoint to accept GUID with the following format: /dg.4DFC/uuid */
+router.get('/:prefix/:fileId', async function(req, res, next) {
+  if (!isGuidPrefix(req.params.prefix)) {
+    return next('route');
+  }
+
+  logger.info({
+    event_type: 'files_request',
+    method: req.method,
+    path: req.originalUrl || req.url,
+    prefix: req.params.prefix,
+    file_id: req.params.fileId,
+  });
+  const fileId = getCanonicalFileIdFromRouteParams(req.params);
+  await getFile(fileId, req, res, next);
+});
+
+/* GET file's location based on source + bare fileId. /ras/uuid */
+router.get('/:idp/:fileId', async function(req, res, next) {
+  if (!isSupportedSource(req.params.idp)) {
+    return next('route');
+  }
+
+  logger.info({
+    event_type: 'files_request',
+    method: req.method,
+    path: req.originalUrl || req.url,
+    idp: req.params.idp,
+    file_id: req.params.fileId,
+  });
+  await getFile(req.params.fileId, req, res, next);
+});
+
+/* GET file's location based on bare fileId. /uuid */
 router.get('/:fileId', async function(req, res, next) {
   logger.info({
     event_type: 'files_request',
     method: req.method,
     path: req.originalUrl || req.url,
-    file_id: req.params.fileId,
-  });
-  await getFile(req.params.fileId, req, res, next);
-});
-
-/* Endpoint to accept GUID with the following format: /ras/phsid1000/dg.4DFC/uudi} */
-router.get('/:idp/:prefix/:fileId', async function(req, res, next) {
-  logger.info({
-    event_type: 'files_request',
-    method: req.method,
-    path: req.originalUrl || req.url,
-    idp: req.params.idp,
-    prefix: req.params.prefix,
-    file_id: req.params.fileId,
-  });
-  await getFile(req.params.prefix+"/"+req.params.fileId, req, res, next);
-});
-
-/* GET file's location based on fileId. /ras/phsid1000/uuid */ 
-router.get('/:idp/:fileId', async function(req, res, next) {
-  logger.info({
-    event_type: 'files_request',
-    method: req.method,
-    path: req.originalUrl || req.url,
-    idp: req.params.idp,
-    file_id: req.params.fileId,
-  });
-  await getFile(req.params.fileId, req, res, next);
-});
-
-/* Endpoint to accept GUID with the following format: /ras/phsid1000/dg.4DFC/uudi} */
-router.get('/:idp/:phs/:prefix/:fileId', async function(req, res, next) {
-  logger.info({
-    event_type: 'files_request',
-    method: req.method,
-    path: req.originalUrl || req.url,
-    idp: req.params.idp,
-    phs: req.params.phs,
-    prefix: req.params.prefix,
-    file_id: req.params.fileId,
-  });
-  await getFile(req.params.prefix+"/"+req.params.fileId, req, res, next);
-});
-
-/* GET file's location based on fileId. /ras/phsid1000/uuid */ 
-router.get('/:idp/:phs/:fileId', async function(req, res, next) {
-  logger.info({
-    event_type: 'files_request',
-    method: req.method,
-    path: req.originalUrl || req.url,
-    idp: req.params.idp,
-    phs: req.params.phs,
     file_id: req.params.fileId,
   });
   await getFile(req.params.fileId, req, res, next);
@@ -139,9 +188,10 @@ async function getFile(fileId, req, res, next) {
 
   const startTime = Date.now();
   try {
-    const response = idp
+    const connectorResponse = idp
       ? await getURLFromSource(fileId, req, res, idp)
       : await getURL(fileId, req, res);
+    const response = normalizeConnectorResponse(connectorResponse);
     const duration = Date.now() - startTime;
 
     logger.info({
@@ -165,7 +215,14 @@ async function getFile(fileId, req, res, next) {
       access_token: userInfo?.userInfo?.tokens?.access_token || '',
     });
 
-    res.status(response.status).send(response.message);
+    const signedUrlPayload = response.status === 200
+      ? getSignedUrlPayload(response.message)
+      : null;
+    if (signedUrlPayload) {
+      return res.status(response.status).json(signedUrlPayload);
+    }
+
+    return res.status(response.status).send(response.message);
   } catch (e) {
     const duration = Date.now() - startTime;
     const status = e.statusCode || 400;
