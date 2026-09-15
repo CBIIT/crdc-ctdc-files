@@ -96,3 +96,6 @@ source = ras
 study accession = phs000000
 file ID = dg.4DFC/file-uuid
 ```
+
+The auth middleware uses the same canonical file ID parsing for ACL lookup, so
+authorization and connector download use the same file identifier.

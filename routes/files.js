@@ -5,25 +5,14 @@ const getURL = require('../connectors');
 const getURLFromSource = require('../connectors/connectorsFromSource.js');
 const logger = require('../logger');
 const {getSessionIdFromCookie, getUserInfoFromDatabase} = require('../utils/session-user-info');
+const {
+  getCanonicalFileIdFromRouteParams,
+  isGuidPrefix,
+  isSupportedSource,
+} = require('../utils/file-route');
 
 
 //const {storeDownloadEvent} = require("../neo4j/neo4j-operations");
-
-const GUID_PREFIXES = new Set(['dg.4dfc']);
-
-function isGuidPrefix(prefix) {
-  return GUID_PREFIXES.has(String(prefix || '').trim().toLowerCase());
-}
-
-function isSupportedSource(source) {
-  const sourceName = String(source || '').trim().toUpperCase();
-  return Array.isArray(getURLFromSource.supportedSources)
-    && getURLFromSource.supportedSources.includes(sourceName);
-}
-
-function buildPrefixedFileId(prefix, fileId) {
-  return `${prefix}/${fileId}`;
-}
 
 function getSignedUrlPayload(message) {
   if (typeof message === 'string' && /^https?:\/\//i.test(message.trim())) {
@@ -97,7 +86,7 @@ router.get('/:idp/:phs/:prefix/:fileId', async function(req, res, next) {
     prefix: req.params.prefix,
     file_id: req.params.fileId,
   });
-  const fileId = buildPrefixedFileId(req.params.prefix, req.params.fileId);
+  const fileId = getCanonicalFileIdFromRouteParams(req.params);
   await getFile(fileId, req, res, next);
 });
 
@@ -115,7 +104,7 @@ router.get('/:idp/:prefix/:fileId', async function(req, res, next) {
     prefix: req.params.prefix,
     file_id: req.params.fileId,
   });
-  const fileId = buildPrefixedFileId(req.params.prefix, req.params.fileId);
+  const fileId = getCanonicalFileIdFromRouteParams(req.params);
   await getFile(fileId, req, res, next);
 });
 
@@ -149,7 +138,7 @@ router.get('/:prefix/:fileId', async function(req, res, next) {
     prefix: req.params.prefix,
     file_id: req.params.fileId,
   });
-  const fileId = buildPrefixedFileId(req.params.prefix, req.params.fileId);
+  const fileId = getCanonicalFileIdFromRouteParams(req.params);
   await getFile(fileId, req, res, next);
 });
 

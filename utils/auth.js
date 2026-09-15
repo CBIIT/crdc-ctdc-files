@@ -4,6 +4,7 @@ const {getFileACL} = require("../model");
 const {strToArr} = require("./string-util");
 const {isAdminUser, getApprovedUserAcls} = require("../services/user-auth");
 const logger = require('../logger');
+const {getCanonicalFileIdFromFilesPath} = require('./file-route');
 
 module.exports = function (exceptions) {
     return async function(req, res, next) {
@@ -20,7 +21,7 @@ module.exports = function (exceptions) {
                 // Pass if ACL authenticator not enabled
                 if (!config.authorizationEnabled) return next();
                 // Search file ACL from Bento-backend API
-                const fileId = req.path.replace("/api/files/", "");
+                const fileId = getCanonicalFileIdFromFilesPath(req.path);
                 const cookie = req.headers.cookie;
                 const fileAcl = await getFileACL(fileId, cookie);
                 const userAcl = getApprovedUserAcls(req.session.userInfo.acl);
