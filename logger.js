@@ -1,6 +1,6 @@
 const winston = require('winston');
 
-const APP_NAME = process.env.APP_NAME || 'ctdc-app';
+const APP_NAME = process.env.APP_NAME || 'ctdc_app';
 const CADR_NAME = process.env.CADR_NAME || 'ctdc';
 const NIH_ICO = process.env.NIH_ICO || 'NCI';
 const DEST_PORT = process.env.DEST_PORT || 443;
