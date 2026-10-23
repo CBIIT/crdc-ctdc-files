@@ -1,10 +1,11 @@
 const {isCaseInsensitiveEqual} = require("../utils/string-util");
+const logger = require('../logger');
 
 const getFileField = (data, callBack)=> {
     if (data && data.file && data.file.length > 0) {
         return callBack(data);
     } else {
-        console.error("File not found in DB");
+        logger.error({ event_type: 'file_auth_file_not_found' });
         return null;
     }
 }

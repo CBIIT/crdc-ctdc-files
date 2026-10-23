@@ -1,5 +1,6 @@
 const mysql = require('mysql2');
 const config = require('../config.js');
+const logger = require('../logger');
 
 const connection = mysql.createPool({
     host: config.mysql_host,
@@ -21,7 +22,7 @@ const getToken = (req, res) => {
             connection.query("select * from sessions where session_id=?", sessionID, (err, rows) => {
                 let response;
                 if (err){
-                    console.log(err);
+                    logger.error({ event_type: 'session_database_query_error', message: err.message });
                     response = { error: "An error occurred while querying the database, see logs for details"};
                 }
                 else if (!rows || !rows[0] || !rows[0].data || !rows[0].data.token){

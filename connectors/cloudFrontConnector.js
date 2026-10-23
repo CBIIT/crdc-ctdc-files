@@ -1,5 +1,6 @@
 const config = require("../config");
 const { getSignedUrl } = require("@aws-sdk/cloudfront-signer");
+const logger = require('../logger');
 
 const DEFAULT_EXPIRATION_SECONDS = 60 * 60 * 24; // 24 hours
 
@@ -13,7 +14,7 @@ function getExpiration() {
 
 function transformToCloudFrontUrl(file_location) {
   if (!file_location || file_location.length === 0) {
-    console.error("File location retrieved from database is empty!");
+    logger.error({ event_type: 'cloudfront_file_location_missing' });
   }
 
   const url = new URL(file_location);
